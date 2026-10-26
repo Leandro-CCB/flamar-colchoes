@@ -401,6 +401,14 @@ export const CartCheckoutDrawer: React.FC = () => {
 };
 
 export const StoreFooter: React.FC = () => {
+  const { setEnvironment, setErpSection } = useFlamar();
+
+  const handleOpenAdminErp = () => {
+    setEnvironment('erp');
+    setErpSection('dashboard');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <footer className="bg-[#1C110E] text-white border-t-4 border-[#82260E]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-xs">
@@ -463,8 +471,21 @@ export const StoreFooter: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-[#120A08] py-4 px-4 text-center text-[11px] text-gray-400 border-t border-white/10">
-        © {new Date().getFullYear()} {FLAMAR_COMPANY_INFO.name} — CNPJ {FLAMAR_COMPANY_INFO.cnpj} — Todos os direitos reservados. Plataforma E-commerce & ERP Corporativo Integrado.
+      {/* Barra Final de Rodapé com Aba Exclusiva: ÁREA DO ADMINISTRADOR */}
+      <div className="bg-[#120A08] py-5 px-4 sm:px-6 border-t border-white/10">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center sm:text-left text-[11px] text-gray-400">
+            © {new Date().getFullYear()} {FLAMAR_COMPANY_INFO.name} — CNPJ {FLAMAR_COMPANY_INFO.cnpj} — Rua Jotacá, 378 (Vila Picinin / Pirituba - SP).
+          </div>
+
+          <button
+            onClick={handleOpenAdminErp}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#82260E] to-[#B83918] hover:from-[#9B2E11] hover:to-[#DF6442] text-white font-extrabold text-xs uppercase tracking-wider flex items-center gap-2 border border-[#D4AF37]/60 shadow-lg transition-all cursor-pointer"
+          >
+            <ShieldCheck size={16} className="text-[#D4AF37]" />
+            <span>Área do Administrador</span>
+          </button>
+        </div>
       </div>
     </footer>
   );

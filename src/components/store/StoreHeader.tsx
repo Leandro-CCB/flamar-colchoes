@@ -51,7 +51,7 @@ export const StoreHeader: React.FC<StoreHeaderProps> = ({
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-brand-100 sticky top-[45px] z-40">
+    <header className="bg-white shadow-sm border-b border-brand-100 sticky top-0 z-40">
       {/* 1. Barra de Diferenciais Flamar */}
       <div className="bg-[#82260E] text-white text-xs py-2 px-4">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -156,15 +156,7 @@ export const StoreHeader: React.FC<StoreHeaderProps> = ({
               </div>
             </button>
 
-            {/* Atalho ERP */}
-            <button
-              onClick={() => setEnvironment('erp')}
-              className="hidden sm:flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#231B18] hover:bg-[#3A2822] text-white text-xs font-bold shadow-sm transition-all"
-              title="Acessar Painel Administrativo e ERP Completo"
-            >
-              <LayoutDashboard size={16} className="text-[#D4AF37]" />
-              <span>Área ERP</span>
-            </button>
+
 
             {/* Botão do Pedido / Carrinho */}
             <button
@@ -265,16 +257,7 @@ export const StoreHeader: React.FC<StoreHeaderProps> = ({
             >
               Endereço: Rua Jotacá, 378
             </button>
-            <button
-              onClick={() => {
-                setEnvironment('erp');
-                setMobileMenuOpen(false);
-              }}
-              className="px-3 py-2 rounded-lg bg-[#231B18] text-white text-xs font-bold flex items-center gap-1.5"
-            >
-              <LayoutDashboard size={14} className="text-[#D4AF37]" />
-              <span>Abrir ERP Administrativo</span>
-            </button>
+
           </div>
         </div>
       )}
