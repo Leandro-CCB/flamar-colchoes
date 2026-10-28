@@ -314,6 +314,7 @@ export const PdvView: React.FC = () => {
 export const InventoryView: React.FC = () => {
   const { products, adjustStock, upsertProduct } = useFlamar();
   const [stockSearch, setStockSearch] = useState('');
+  const [selectedProductFilter, setSelectedProductFilter] = useState('');
   const [editingProd, setEditingProd] = useState<Product | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
 
@@ -331,6 +332,7 @@ export const InventoryView: React.FC = () => {
   const totalRetailValue = products.reduce((acc, p) => acc + p.price * p.stock_qty, 0);
 
   const filteredProducts = products.filter((p) => {
+    if (selectedProductFilter && p.id !== selectedProductFilter) return false;
     if (!stockSearch.trim()) return true;
     const q = stockSearch.toLowerCase();
     return (
@@ -435,24 +437,57 @@ export const InventoryView: React.FC = () => {
       <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-soft">
         {/* Barra de Filtro e Busca de Produtos no Estoque */}
         <div className="p-4 border-b border-gray-200 bg-[#FAF7F4] flex flex-wrap items-center justify-between gap-3">
-          <div className="relative flex-1 min-w-[240px] max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text"
-              value={stockSearch}
-              onChange={(e) => setStockSearch(e.target.value)}
-              placeholder="Filtrar por nome, SKU, marca ou medida..."
-              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#82260E]"
-            />
-            {stockSearch && (
-              <button
-                onClick={() => setStockSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-700 font-bold"
+          <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+            {/* Campo Dropbox (Select) para escolher produto cadastrado */}
+            <div className="relative min-w-[220px] max-w-xs">
+              <select
+                value={selectedProductFilter}
+                onChange={(e) => setSelectedProductFilter(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#82260E] font-medium"
               >
-                ✕
+                <option value="">▼ Todos os Produtos Cadastrados</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.brand})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Campo de Busca Texto */}
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+              <input
+                type="text"
+                value={stockSearch}
+                onChange={(e) => setStockSearch(e.target.value)}
+                placeholder="Buscar por nome, SKU, medida..."
+                className="w-full pl-9 pr-7 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#82260E]"
+              />
+              {stockSearch && (
+                <button
+                  onClick={() => setStockSearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-700 font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {(selectedProductFilter || stockSearch) && (
+              <button
+                onClick={() => {
+                  setSelectedProductFilter('');
+                  setStockSearch('');
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold transition-colors"
+                title="Limpar todos os filtros"
+              >
+                Limpar
               </button>
             )}
           </div>
+
           <div className="text-xs font-semibold text-gray-500">
             Exibindo <strong>{filteredProducts.length}</strong> de {products.length} produtos
           </div>

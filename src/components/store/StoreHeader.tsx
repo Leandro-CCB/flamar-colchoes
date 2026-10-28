@@ -33,9 +33,6 @@ export const StoreHeader: React.FC<StoreHeaderProps> = ({
 
   const navCategories: { id: ProductCategory; label: string }[] = [
     { id: 'todos', label: 'TODOS' },
-    { id: 'cama_box', label: 'CAMA BOX' },
-    { id: 'box_bau', label: 'BOX BAÚ' },
-    { id: 'colchoes', label: 'COLCHÕES' },
     { id: 'casal', label: 'CASAL (138x188)' },
     { id: 'solteiro', label: 'SOLTEIRO (88x188)' },
   ];
