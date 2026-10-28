@@ -28,6 +28,12 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
   } = useFlamar();
 
   const [heroIndex, setHeroIndex] = useState(0);
+  const [selectedSizeFilter, setSelectedSizeFilter] = useState<string>('todos');
+
+  // Resetar filtro de medida caso o usuário mude de categoria
+  useEffect(() => {
+    setSelectedSizeFilter('todos');
+  }, [selectedCategory]);
 
   const heroSlides = [
     {
@@ -72,6 +78,11 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
       p.category === selectedCategory ||
       p.tags.includes(selectedCategory);
 
+    const matchesSize =
+      selectedSizeFilter === 'todos' ||
+      (p.size_label && p.size_label.toLowerCase() === selectedSizeFilter.toLowerCase()) ||
+      (p.dimensions && p.dimensions.toLowerCase().includes(selectedSizeFilter.toLowerCase()));
+
     const q = searchQuery.trim().toLowerCase();
     const matchesSearch =
       !q ||
@@ -81,7 +92,7 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
       p.density_or_spring.toLowerCase().includes(q) ||
       p.dimensions.toLowerCase().includes(q);
 
-    return matchesCat && matchesSearch;
+    return matchesCat && matchesSize && matchesSearch;
   });
 
   const handleBuyNow = (p: Product) => {
@@ -337,40 +348,81 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
         </section>
       )}
 
-      {/* ── ATALHOS VISUAIS DE LINHAS E MEDIDAS ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {[
-            { id: 'colchoes' as ProductCategory, title: 'Colchões', sub: 'Molas & Espuma D33', count: '6 modelos' },
-            { id: 'box_bau' as ProductCategory, title: 'Box Baú Blindado', sub: 'Pistão a Gás 43cm', count: 'Solteiro / Casal / Queen' },
-            { id: 'cama_box' as ProductCategory, title: 'Bases Cama Box', sub: 'Madeira Reflorestada', count: 'Suede & Liderflex' },
-            { id: 'luckspuma' as ProductCategory, title: 'Luckspuma', sub: 'Roma & Dream 34cm', count: 'Molas Ensacadas' },
-            { id: 'fa_maringa' as ProductCategory, title: 'FA Maringá & Ícaro', sub: 'Maxx Firme & D33', count: 'Selo INER / Pró-Espuma' },
-            { id: 'castor' as ProductCategory, title: 'Castor Premium', sub: 'Pocket Gel 36cm', count: 'Double Face' },
-          ].map((card) => {
-            const active = selectedCategory === card.id;
-            return (
+      {/* ── SELETOR INTELIGENTE DE MEDIDAS (QUANDO CASAL OU SOLTEIRO ESTIVER SELECIONADO) ── */}
+      {selectedCategory !== 'todos' && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+          <div className="bg-white rounded-2xl border-2 border-[#82260E]/20 p-4 sm:p-5 shadow-soft">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#82260E] block">
+                  FILTRO POR MEDIDA OFICIAL DO ESTOQUE
+                </span>
+                <h3 className="text-base sm:text-lg font-serif font-bold text-gray-900 mt-0.5">
+                  Escolha a Medida Desejada ({selectedCategory === 'casal' ? 'Camas de Casal' : 'Camas de Solteiro'})
+                </h3>
+              </div>
+              <span className="text-xs text-gray-500 font-medium">
+                Selecione abaixo para ver os modelos disponíveis
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
               <button
-                key={card.id}
-                onClick={() => setSelectedCategory(card.id)}
-                className={`p-3.5 rounded-2xl text-left border transition-all ${
-                  active
-                    ? 'bg-[#82260E] text-white border-[#82260E] shadow-md'
-                    : 'bg-white text-gray-900 border-gray-200 hover:border-[#82260E]'
+                onClick={() => setSelectedSizeFilter('todos')}
+                className={`px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all ${
+                  selectedSizeFilter === 'todos'
+                    ? 'bg-[#82260E] text-white shadow-md ring-2 ring-[#D4AF37]/60'
+                    : 'bg-[#FAF7F4] text-gray-700 border border-gray-200 hover:border-[#82260E]'
                 }`}
               >
-                <span className={`text-[10px] font-extrabold uppercase tracking-wider block ${active ? 'text-[#FBF1D6]' : 'text-[#82260E]'}`}>
-                  {card.count}
-                </span>
-                <span className="font-serif font-bold text-sm block mt-0.5">{card.title}</span>
-                <span className={`text-[11px] block mt-0.5 ${active ? 'text-white/80' : 'text-gray-500'}`}>
-                  {card.sub}
-                </span>
+                Todas as Medidas
               </button>
-            );
-          })}
-        </div>
-      </section>
+
+              {/* Extrair as medidas cadastradas para a categoria selecionada */}
+              {Array.from(
+                new Set(
+                  products
+                    .filter(
+                      (p) =>
+                        p.category === selectedCategory ||
+                        p.tags.includes(selectedCategory)
+                    )
+                    .map((p) => p.size_label)
+                    .filter(Boolean)
+                )
+              ).map((sizeLabel) => {
+                const isSelected = selectedSizeFilter.toLowerCase() === sizeLabel.toLowerCase();
+                const count = products.filter(
+                  (p) =>
+                    (p.category === selectedCategory || p.tags.includes(selectedCategory)) &&
+                    p.size_label === sizeLabel
+                ).length;
+
+                return (
+                  <button
+                    key={sizeLabel}
+                    onClick={() => setSelectedSizeFilter(sizeLabel)}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                      isSelected
+                        ? 'bg-[#82260E] text-white shadow-md ring-2 ring-[#D4AF37]/60'
+                        : 'bg-[#FAF7F4] text-gray-800 border border-gray-200 hover:border-[#82260E]'
+                    }`}
+                  >
+                    <span>{sizeLabel}</span>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                        isSelected ? 'bg-white/20 text-[#FBF1D6]' : 'bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {count} {count === 1 ? 'modelo' : 'modelos'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── CATÁLOGO DE PRODUTOS REAIS FLAMAR COLCHÕES ── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">

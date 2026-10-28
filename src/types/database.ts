@@ -18,17 +18,7 @@ export type ErpSection =
   | 'dre'
   | 'settings';
 
-export type ProductCategory =
-  | 'todos'
-  | 'colchoes'
-  | 'cama_box'
-  | 'box_bau'
-  | 'luckspuma'
-  | 'castor'
-  | 'fa_maringa'
-  | 'casal'
-  | 'solteiro'
-  | 'queen';
+export type ProductCategory = string;
 
 export interface Product {
   id: string;

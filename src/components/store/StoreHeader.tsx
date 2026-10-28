@@ -17,6 +17,7 @@ export const StoreHeader: React.FC<StoreHeaderProps> = ({
   setActiveSection
 }) => {
   const {
+    products,
     selectedCategory,
     setSelectedCategory,
     searchQuery,
@@ -32,9 +33,9 @@ export const StoreHeader: React.FC<StoreHeaderProps> = ({
   const totalAmount = cart.reduce((acc, item) => acc + item.product.cash_price * item.quantity, 0);
 
   const navCategories: { id: ProductCategory; label: string }[] = [
-    { id: 'todos', label: 'TODOS' },
-    { id: 'casal', label: 'CASAL (138x188)' },
-    { id: 'solteiro', label: 'SOLTEIRO (88x188)' },
+    { id: 'todos', label: 'TODOS OS PRODUTOS' },
+    { id: 'casal', label: 'CAMAS DE CASAL' },
+    { id: 'solteiro', label: 'CAMAS DE SOLTEIRO' },
   ];
 
   const handleSelectCat = (cat: ProductCategory) => {
