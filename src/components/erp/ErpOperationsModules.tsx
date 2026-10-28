@@ -310,9 +310,10 @@ export const PdvView: React.FC = () => {
   );
 };
 
-// ── 2. CONTROLE DE ESTOQUE & TABELA DE PREÇOS (GALPÃO RUA JOTACÁ) ─────────
+// ── 2. CONTROLE DE ESTOQUE & TABELA DE PREÇOS (LOJA RUA JOTACÁ) ─────────
 export const InventoryView: React.FC = () => {
   const { products, adjustStock, upsertProduct } = useFlamar();
+  const [stockSearch, setStockSearch] = useState('');
   const [editingProd, setEditingProd] = useState<Product | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
 
@@ -328,6 +329,18 @@ export const InventoryView: React.FC = () => {
   const totalUnits = products.reduce((acc, p) => acc + p.stock_qty, 0);
   const totalCostValue = products.reduce((acc, p) => acc + p.cost_price * p.stock_qty, 0);
   const totalRetailValue = products.reduce((acc, p) => acc + p.price * p.stock_qty, 0);
+
+  const filteredProducts = products.filter((p) => {
+    if (!stockSearch.trim()) return true;
+    const q = stockSearch.toLowerCase();
+    return (
+      p.name.toLowerCase().includes(q) ||
+      p.sku.toLowerCase().includes(q) ||
+      p.brand.toLowerCase().includes(q) ||
+      p.dimensions.toLowerCase().includes(q) ||
+      p.size_label.toLowerCase().includes(q)
+    );
+  });
 
   const handleCreateProduct = (e: React.FormEvent) => {
     e.preventDefault();
@@ -381,7 +394,7 @@ export const InventoryView: React.FC = () => {
             Controle de Estoque Físico & Margens
           </h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Ajuste quantidades em galpão, preço à vista (-5%), tabela 10x e custo de fábrica.
+            Ajuste quantidades na loja, preço à vista (-5%), tabela 10x e custo de fábrica.
           </p>
         </div>
 
@@ -420,6 +433,31 @@ export const InventoryView: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-soft">
+        {/* Barra de Filtro e Busca de Produtos no Estoque */}
+        <div className="p-4 border-b border-gray-200 bg-[#FAF7F4] flex flex-wrap items-center justify-between gap-3">
+          <div className="relative flex-1 min-w-[240px] max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              value={stockSearch}
+              onChange={(e) => setStockSearch(e.target.value)}
+              placeholder="Filtrar por nome, SKU, marca ou medida..."
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:border-[#82260E]"
+            />
+            {stockSearch && (
+              <button
+                onClick={() => setStockSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-700 font-bold"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <div className="text-xs font-semibold text-gray-500">
+            Exibindo <strong>{filteredProducts.length}</strong> de {products.length} produtos
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -429,12 +467,12 @@ export const InventoryView: React.FC = () => {
                 <th className="py-3.5 px-4 font-bold text-right">Custo (R$)</th>
                 <th className="py-3.5 px-4 font-bold text-right">À Vista -5%</th>
                 <th className="py-3.5 px-4 font-bold text-right">Tabela 10x</th>
-                <th className="py-3.5 px-4 font-bold text-center">Saldo Galpão</th>
+                <th className="py-3.5 px-4 font-bold text-center">Saldo na Loja</th>
                 <th className="py-3.5 px-4 font-bold text-center">Ajuste Rápido</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {products.map((p) => (
+              {filteredProducts.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">

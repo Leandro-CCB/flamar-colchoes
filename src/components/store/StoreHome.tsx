@@ -263,16 +263,6 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
                     <span>{currentSlide.ctaLabel}</span>
                     <ChevronRight size={16} />
                   </button>
-
-                  <a
-                    href={`https://wa.me/${FLAMAR_COMPANY_INFO.whatsapp_e164}?text=${encodeURIComponent('Olá Flamar Colchões! Quero ajuda de um especialista para escolher meu colchão/cama box.')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-5 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/25 font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all"
-                  >
-                    <MessageCircle size={16} className="text-emerald-400" />
-                    <span>Falar com Especialista: (11) 3975-4947</span>
-                  </a>
                 </div>
 
                 {/* Indicadores dos Slides */}

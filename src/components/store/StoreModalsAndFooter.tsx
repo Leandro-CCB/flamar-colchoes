@@ -424,19 +424,11 @@ export const StoreFooter: React.FC = () => {
 
         <div className="space-y-2.5">
           <h4 className="text-sm font-serif font-bold text-[#FBF1D6] uppercase tracking-wider">
-            Loja Física & Galpão SP
+            Loja Física
           </h4>
           <p className="flex items-start gap-2 text-gray-300">
             <MapPin size={15} className="text-[#D4AF37] shrink-0 mt-0.5" />
             <span>{FLAMAR_COMPANY_INFO.address_street} — {FLAMAR_COMPANY_INFO.neighborhood}<br />{FLAMAR_COMPANY_INFO.city} - {FLAMAR_COMPANY_INFO.state} • CEP {FLAMAR_COMPANY_INFO.cep}</span>
-          </p>
-          <p className="flex items-center gap-2 text-gray-300">
-            <Phone size={15} className="text-[#D4AF37] shrink-0" />
-            <span>Fone: {FLAMAR_COMPANY_INFO.phone_landline}</span>
-          </p>
-          <p className="flex items-center gap-2 text-gray-300">
-            <Mail size={15} className="text-[#D4AF37] shrink-0" />
-            <span>{FLAMAR_COMPANY_INFO.email}</span>
           </p>
         </div>
 
