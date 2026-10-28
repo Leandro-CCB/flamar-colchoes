@@ -13,6 +13,7 @@ export type ErpSection =
   | 'inventory'
   | 'orders'
   | 'customers'
+  | 'analytics'
   | 'suppliers'
   | 'dre'
   | 'settings';
@@ -187,8 +188,22 @@ export interface CustomerRecord {
   total_orders: number;
   total_spent: number;
   last_order_date?: string;
+  last_payment_method?: string;
+  last_products?: string;
   notes?: string;
   created_at: string;
+}
+
+export interface VisitRecord {
+  id: string;
+  timestamp: string; // ISO string
+  date: string; // YYYY-MM-DD
+  month: string; // YYYY-MM
+  hour: number; // 0-23
+  dayOfWeek: number; // 0 (Dom) a 6 (Sab)
+  path: string;
+  referrer: string;
+  userAgent?: string;
 }
 
 export interface SupplierRecord {

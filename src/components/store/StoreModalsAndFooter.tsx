@@ -401,7 +401,7 @@ export const CartCheckoutDrawer: React.FC = () => {
 };
 
 export const StoreFooter: React.FC = () => {
-  const { setEnvironment, setErpSection } = useFlamar();
+  const { setEnvironment, setErpSection, visits } = useFlamar();
 
   const handleOpenAdminErp = () => {
     setEnvironment('erp');
@@ -478,13 +478,22 @@ export const StoreFooter: React.FC = () => {
             © {new Date().getFullYear()} {FLAMAR_COMPANY_INFO.name} — CNPJ {FLAMAR_COMPANY_INFO.cnpj} — Rua Jotacá, 378 (Vila Picinin / Pirituba - SP).
           </div>
 
-          <button
-            onClick={handleOpenAdminErp}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#82260E] to-[#B83918] hover:from-[#9B2E11] hover:to-[#DF6442] text-white font-extrabold text-xs uppercase tracking-wider flex items-center gap-2 border border-[#D4AF37]/60 shadow-lg transition-all cursor-pointer"
-          >
-            <ShieldCheck size={16} className="text-[#D4AF37]" />
-            <span>Área do Administrador</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            {/* Contador de Visitas no Rodapé */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Visitas no Site:</span>
+              <strong className="text-white font-mono font-bold">{visits.length}</strong>
+            </div>
+
+            <button
+              onClick={handleOpenAdminErp}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#82260E] to-[#B83918] hover:from-[#9B2E11] hover:to-[#DF6442] text-white font-extrabold text-xs uppercase tracking-wider flex items-center gap-2 border border-[#D4AF37]/60 shadow-lg transition-all cursor-pointer"
+            >
+              <ShieldCheck size={16} className="text-[#D4AF37]" />
+              <span>Área do Administrador</span>
+            </button>
+          </div>
         </div>
       </div>
     </footer>

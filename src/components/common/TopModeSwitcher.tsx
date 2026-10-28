@@ -2,26 +2,27 @@ import React from 'react';
 import { useFlamar } from '../../context/FlamarContext';
 import {
   ShoppingBag,
-  LayoutDashboard,
-  Calculator,
-  Wallet,
   Package,
-  FileSpreadsheet,
-  DollarSign,
-  Truck,
   Users,
-  PieChart
+  Eye
 } from 'lucide-react';
 import { ErpSection } from '../../types/database';
 
 export const TopModeSwitcher: React.FC = () => {
-  const { environment, setEnvironment, erpSection, setErpSection } = useFlamar();
+  const { environment, setEnvironment, erpSection, setErpSection, visits } = useFlamar();
 
   // Na visão do cliente (Loja Virtual), NÃO exibe nenhuma barra de abas do ERP
   if (environment !== 'erp') return null;
 
-  const erpTabs: { id: ErpSection; label: string; icon: React.ReactNode }[] = [
+  const erpTabs: { id: ErpSection; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'inventory', label: 'Estoque & Preços', icon: <Package size={14} /> },
+    { id: 'customers', label: 'Clientes & Compras', icon: <Users size={14} /> },
+    {
+      id: 'analytics',
+      label: 'Visitas & Métricas',
+      icon: <Eye size={14} />,
+      badge: visits.length > 0 ? `${visits.length}` : undefined
+    },
   ];
 
   return (
@@ -43,6 +44,11 @@ export const TopModeSwitcher: React.FC = () => {
               >
                 {t.icon}
                 <span>{t.label}</span>
+                {t.badge && (
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-[#D4AF37] text-[#1C110E] font-black">
+                    {t.badge}
+                  </span>
+                )}
               </button>
             );
           })}

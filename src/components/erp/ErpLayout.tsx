@@ -4,9 +4,13 @@ import { FlamarLogo } from '../common/FlamarLogo';
 import { FLAMAR_COMPANY_INFO } from '../../lib/flamarCatalog';
 import { ErpSection } from '../../types/database';
 import { InventoryView } from './ErpOperationsModules';
+import { CustomersModuleView } from './CustomersModuleView';
+import { AnalyticsModuleView } from './AnalyticsModuleView';
 import {
   Package,
   ShoppingBag,
+  Users,
+  Eye,
   Menu,
   X
 } from 'lucide-react';
@@ -17,6 +21,8 @@ export const ErpLayout: React.FC = () => {
     setErpSection,
     setEnvironment,
     products,
+    customers,
+    visits,
   } = useFlamar();
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -27,6 +33,18 @@ export const ErpLayout: React.FC = () => {
       label: 'Estoque & Preços',
       icon: <Package size={16} />,
       badge: String(products.length)
+    },
+    {
+      id: 'customers',
+      label: 'Clientes & Compras',
+      icon: <Users size={16} />,
+      badge: customers.length > 0 ? String(customers.length) : undefined
+    },
+    {
+      id: 'analytics',
+      label: 'Visitas & Métricas',
+      icon: <Eye size={16} />,
+      badge: visits.length > 0 ? String(visits.length) : undefined
     },
   ];
 
@@ -116,8 +134,9 @@ export const ErpLayout: React.FC = () => {
         </div>
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          {/* Módulo Único de Gestão: Estoque & Precificação */}
-          <InventoryView />
+          {erpSection === 'inventory' && <InventoryView />}
+          {erpSection === 'customers' && <CustomersModuleView />}
+          {erpSection === 'analytics' && <AnalyticsModuleView />}
         </main>
       </div>
     </div>

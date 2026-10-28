@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   AppEnvironment,
   ErpSection,
@@ -11,6 +11,7 @@ import {
   ErpOrder,
   CustomerRecord,
   SupplierRecord,
+  VisitRecord,
   PaymentMethod,
   OrderDeliveryStatus
 } from '../types/database';
@@ -75,6 +76,11 @@ interface FlamarContextType {
   suppliers: SupplierRecord[];
   addSupplier: (sup: Omit<SupplierRecord, 'id'>) => void;
   deleteSupplier: (id: string) => void;
+
+  // Analítica & Contador de Visitas
+  visits: VisitRecord[];
+  recordVisit: (path?: string) => void;
+  clearVisits: () => void;
 }
 
 const STORAGE_KEYS = {
@@ -85,7 +91,9 @@ const STORAGE_KEYS = {
   RECEIVABLES: 'flamar_erp_receivables_v1',
   CUSTOMERS: 'flamar_erp_customers_v1',
   SUPPLIERS: 'flamar_erp_suppliers_v1',
-  CART: 'flamar_store_cart_v1'
+  CART: 'flamar_store_cart_v1',
+  VISITS: 'flamar_site_visits_v1',
+  LAST_VISIT_SESSION: 'flamar_last_visit_session_v1'
 };
 
 const FlamarContext = createContext<FlamarContextType | undefined>(undefined);
@@ -136,6 +144,10 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadStorage<SupplierRecord[]>(STORAGE_KEYS.SUPPLIERS, FLAMAR_AUTHENTIC_SUPPLIERS)
   );
 
+  const [visits, setVisits] = useState<VisitRecord[]>(() =>
+    loadStorage<VisitRecord[]>(STORAGE_KEYS.VISITS, [])
+  );
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
   }, [products]);
@@ -167,6 +179,56 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SUPPLIERS, JSON.stringify(suppliers));
   }, [suppliers]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.VISITS, JSON.stringify(visits));
+  }, [visits]);
+
+  // Registro de Visita com throttling por sessão (não infla com F5 imediato)
+  const recordVisit = useCallback((path: string = '/') => {
+    try {
+      const now = new Date();
+      const lastSessionTime = Number(sessionStorage.getItem(STORAGE_KEYS.LAST_VISIT_SESSION) || '0');
+      const nowMs = now.getTime();
+      // Registra 1 visita por sessão a cada 15 minutos de navegação contínua
+      if (nowMs - lastSessionTime < 15 * 60 * 1000) {
+        return;
+      }
+      sessionStorage.setItem(STORAGE_KEYS.LAST_VISIT_SESSION, String(nowMs));
+
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const monthStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+      const hourNum = now.getHours();
+      const dayOfWeekNum = now.getDay();
+
+      const newRecord: VisitRecord = {
+        id: `VISIT-${nowMs}-${Math.random().toString(36).slice(2, 6)}`,
+        timestamp: now.toISOString(),
+        date: dateStr,
+        month: monthStr,
+        hour: hourNum,
+        dayOfWeek: dayOfWeekNum,
+        path: path || window.location.pathname,
+        referrer: typeof document !== 'undefined' ? (document.referrer || 'Direto') : 'Direto',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : ''
+      };
+
+      setVisits(prev => [newRecord, ...prev].slice(0, 10000));
+    } catch {
+      // safe fallback
+    }
+  }, []);
+
+  const clearVisits = () => {
+    setVisits([]);
+    sessionStorage.removeItem(STORAGE_KEYS.LAST_VISIT_SESSION);
+  };
+
+  // Efeito inicial para registrar a visita do usuário ao carregar a página
+  useEffect(() => {
+    recordVisit(window.location.pathname);
+  }, [recordVisit]);
 
   // Carrinho
   const addToCart = (product: Product, qty = 1) => {
@@ -377,7 +439,22 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       adjustStock(item.product_id, -item.quantity, `Venda ${newOrder.id}`);
     });
 
-    // 2. Atualizar ou cadastrar cliente genuíno
+    // 2. Atualizar ou cadastrar cliente genuíno com histórico completo de compras
+    const productsSummary = orderData.items
+      .map(i => `${i.quantity}x ${i.product_name} (R$ ${i.unit_price.toFixed(2)})`)
+      .join(', ');
+
+    const paymentLabel =
+      orderData.payment_method === 'pix'
+        ? 'PIX à Vista (-10%)'
+        : orderData.payment_method === 'cartao_credito_10x'
+        ? `Cartão de Crédito (${orderData.installments || 1}x)`
+        : orderData.payment_method === 'cartao_debito'
+        ? 'Cartão de Débito'
+        : orderData.payment_method === 'dinheiro'
+        ? 'Dinheiro à Vista'
+        : orderData.payment_method;
+
     setCustomers(prev => {
       const existing = prev.find(
         c =>
@@ -391,7 +468,9 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 ...c,
                 total_orders: c.total_orders + 1,
                 total_spent: c.total_spent + orderData.total,
-                last_order_date: dateStr
+                last_order_date: `${dateStr} ${timeStr}`,
+                last_payment_method: paymentLabel,
+                last_products: productsSummary
               }
             : c
         );
@@ -408,8 +487,10 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         state: 'SP',
         total_orders: 1,
         total_spent: orderData.total,
-        last_order_date: dateStr,
-        created_at: dateStr
+        last_order_date: `${dateStr} ${timeStr}`,
+        last_payment_method: paymentLabel,
+        last_products: productsSummary,
+        created_at: `${dateStr} ${timeStr}`
       };
       return [created, ...prev];
     });
@@ -512,7 +593,10 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteCustomer,
         suppliers,
         addSupplier,
-        deleteSupplier
+        deleteSupplier,
+        visits,
+        recordVisit,
+        clearVisits
       }}
     >
       {children}
