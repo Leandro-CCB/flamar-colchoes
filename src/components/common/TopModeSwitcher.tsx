@@ -21,21 +21,13 @@ export const TopModeSwitcher: React.FC = () => {
   if (environment !== 'erp') return null;
 
   const erpTabs: { id: ErpSection; label: string; icon: React.ReactNode }[] = [
-    { id: 'dashboard', label: 'Visão Geral', icon: <LayoutDashboard size={14} /> },
-    { id: 'pdv', label: 'PDV Balcão', icon: <Calculator size={14} /> },
-    { id: 'cashflow', label: 'Fluxo de Caixa', icon: <Wallet size={14} /> },
-    { id: 'payables', label: 'Contas a Pagar', icon: <FileSpreadsheet size={14} /> },
-    { id: 'receivables', label: 'Contas a Receber', icon: <DollarSign size={14} /> },
     { id: 'inventory', label: 'Estoque & Preços', icon: <Package size={14} /> },
-    { id: 'orders', label: 'Pedidos & Expedição', icon: <Truck size={14} /> },
-    { id: 'customers', label: 'Clientes', icon: <Users size={14} /> },
-    { id: 'dre', label: 'DRE Gerencial', icon: <PieChart size={14} /> },
   ];
 
   return (
     <div className="bg-[#1C110E] text-white text-xs px-3 sm:px-6 py-2.5 border-b border-[#82260E]/60 sticky top-0 z-50 shadow-md">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-        {/* Régua de Abas do ERP (Todas visíveis somente após entrar na Área do Administrador) */}
+        {/* Régua de Abas do ERP (Apenas Estoque) */}
         <div className="flex items-center gap-1.5 bg-[#2B1813] p-1 rounded-xl border border-white/15 overflow-x-auto no-scrollbar">
           {erpTabs.map((t) => {
             const active = erpSection === t.id;

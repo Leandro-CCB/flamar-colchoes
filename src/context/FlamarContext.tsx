@@ -102,7 +102,7 @@ function loadStorage<T>(key: string, fallback: T): T {
 
 export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [environment, setEnvironment] = useState<AppEnvironment>('storefront');
-  const [erpSection, setErpSection] = useState<ErpSection>('dashboard');
+  const [erpSection, setErpSection] = useState<ErpSection>('inventory');
 
   const [products, setProducts] = useState<Product[]>(() =>
     loadStorage<Product[]>(STORAGE_KEYS.PRODUCTS, FLAMAR_AUTHENTIC_PRODUCTS)

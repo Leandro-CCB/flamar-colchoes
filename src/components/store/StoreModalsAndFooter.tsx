@@ -405,7 +405,7 @@ export const StoreFooter: React.FC = () => {
 
   const handleOpenAdminErp = () => {
     setEnvironment('erp');
-    setErpSection('dashboard');
+    setErpSection('inventory');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
