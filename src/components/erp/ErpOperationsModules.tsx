@@ -8,8 +8,10 @@ import {
 } from '../../types/database';
 import {
   Calculator, Package, Truck, Users, Building2, Plus, Minus,
-  Trash2, CheckCircle2, Search, Edit3, AlertTriangle, ShoppingBag
+  Trash2, CheckCircle2, Search, Edit3, AlertTriangle, ShoppingBag,
+  Upload, Image as ImageIcon, Loader2, X
 } from 'lucide-react';
+import { otimizarImagem, uploadFotoProduto } from '../../lib/supabase';
 
 // ── 1. PDV FRENTE DE CAIXA (BALCÃO RUA JOTACÁ, 378) ────────────────────────
 export const PdvView: React.FC = () => {
@@ -318,6 +320,92 @@ export const InventoryView: React.FC = () => {
   const [editingProd, setEditingProd] = useState<Product | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
 
+  // Estados de Edição Avançada
+  const [editName, setEditName] = useState('');
+  const [editSku, setEditSku] = useState('');
+  const [editBrand, setEditBrand] = useState<Product['brand']>('Luckspuma');
+  const [editCategory, setEditCategory] = useState<ProductCategory>('colchoes');
+  const [editDimensions, setEditDimensions] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editCashPrice, setEditCashPrice] = useState('');
+  const [editCost, setEditCost] = useState('');
+  const [editStock, setEditStock] = useState('');
+  const [editMinStock, setEditMinStock] = useState('2');
+  const [editShortDesc, setEditShortDesc] = useState('');
+  const [editFullDesc, setEditFullDesc] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const openEditModal = (p: Product) => {
+    setEditingProd(p);
+    setEditName(p.name);
+    setEditSku(p.sku);
+    setEditBrand(p.brand);
+    setEditCategory(p.category);
+    setEditDimensions(p.dimensions);
+    setEditPrice(p.price.toString());
+    setEditCashPrice(p.cash_price.toString());
+    setEditCost(p.cost_price.toString());
+    setEditStock(p.stock_qty.toString());
+    setEditMinStock(p.min_stock.toString());
+    setEditShortDesc(p.short_description || '');
+    setEditFullDesc(p.full_description || '');
+    setEditImageUrl(p.image_url);
+    setUploadError(null);
+  };
+
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      setUploadError(null);
+      // Reduz dimensões e comprime em WebP com alta qualidade sem gerar arquivos pesados
+      const blobOtimizado = await otimizarImagem(file, 1200, 0.88);
+      // Upload para o bucket dedicado 'flamar-colchoes'
+      const publicUrl = await uploadFotoProduto(blobOtimizado, editSku || editingProd?.id || 'prod');
+      setEditImageUrl(publicUrl);
+    } catch (err: any) {
+      console.error('Erro no upload da foto:', err);
+      setUploadError(err.message || 'Erro ao processar e enviar foto');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProd) return;
+
+    const priceNum = parseFloat(editPrice.replace(',', '.')) || editingProd.price;
+    const cashPriceNum = editCashPrice ? parseFloat(editCashPrice.replace(',', '.')) : Number((priceNum * 0.95).toFixed(2));
+    const costNum = parseFloat(editCost.replace(',', '.')) || editingProd.cost_price;
+    const stockNum = parseInt(editStock, 10);
+
+    const updated: Product = {
+      ...editingProd,
+      name: editName.trim() || editingProd.name,
+      sku: editSku.trim() || editingProd.sku,
+      brand: editBrand,
+      category: editCategory,
+      dimensions: editDimensions.trim() || editingProd.dimensions,
+      price: priceNum,
+      cash_price: cashPriceNum,
+      cost_price: costNum,
+      stock_qty: isNaN(stockNum) ? editingProd.stock_qty : stockNum,
+      min_stock: parseInt(editMinStock, 10) || editingProd.min_stock,
+      short_description: editShortDesc.trim(),
+      full_description: editFullDesc.trim(),
+      image_url: editImageUrl || editingProd.image_url,
+      gallery: editImageUrl ? [editImageUrl, ...(editingProd.gallery.filter(g => g !== editImageUrl))] : editingProd.gallery,
+    };
+
+    upsertProduct(updated);
+    setEditingProd(null);
+  };
+
   const [newSku, setNewSku] = useState('');
   const [newName, setNewName] = useState('');
   const [newBrand, setNewBrand] = useState<Product['brand']>('Luckspuma');
@@ -504,6 +592,7 @@ export const InventoryView: React.FC = () => {
                 <th className="py-3.5 px-4 font-bold text-right">Tabela 10x</th>
                 <th className="py-3.5 px-4 font-bold text-center">Saldo na Loja</th>
                 <th className="py-3.5 px-4 font-bold text-center">Ajuste Rápido</th>
+                <th className="py-3.5 px-4 font-bold text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -563,6 +652,16 @@ export const InventoryView: React.FC = () => {
                         +1
                       </button>
                     </div>
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    <button
+                      onClick={() => openEditModal(p)}
+                      className="px-3 py-1.5 rounded-xl bg-[#FAF7F4] hover:bg-[#82260E] text-[#82260E] hover:text-white border border-[#82260E]/20 font-bold text-xs inline-flex items-center gap-1.5 transition-all shadow-xs"
+                      title="Editar detalhes do produto"
+                    >
+                      <Edit3 size={13} />
+                      Editar
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -663,6 +762,260 @@ export const InventoryView: React.FC = () => {
                   className="px-5 py-2 rounded-xl bg-[#82260E] text-white font-bold"
                 >
                   Salvar Produto
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE EDIÇÃO AVANÇADA (TÍTULO, FOTO, DESCRIÇÃO, VALORES E ESTOQUE) */}
+      {editingProd && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 space-y-6 shadow-2xl my-8 border border-gray-200">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#82260E]">
+                  MANUTENÇÃO DE CADASTRO
+                </span>
+                <h3 className="text-xl font-serif font-bold text-gray-900">
+                  Editar Produto: {editingProd.name}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingProd(null)}
+                className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-5 text-xs">
+              {/* SEÇÃO FOTO DO PRODUTO (SUPABASE BUCKET) */}
+              <div className="p-4 bg-[#FAF7F4] rounded-2xl border border-[#82260E]/15 space-y-3">
+                <label className="font-bold text-gray-800 flex items-center gap-2">
+                  <ImageIcon size={15} className="text-[#82260E]" />
+                  Foto Principal do Produto (Armazenamento Otimizado WebP)
+                </label>
+                
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-[#82260E]/30 bg-white p-1 shrink-0 flex items-center justify-center overflow-hidden shadow-xs relative">
+                    {editImageUrl ? (
+                      <img
+                        src={editImageUrl}
+                        alt="Preview"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-[10px] text-gray-400 text-center">Sem foto</span>
+                    )}
+                    {uploadingImage && (
+                      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white text-[10px]">
+                        <Loader2 size={18} className="animate-spin mb-1" />
+                        Otimizando...
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 flex-1 w-full">
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer px-4 py-2.5 rounded-xl bg-[#82260E] hover:bg-[#681e0b] text-white font-bold text-xs inline-flex items-center gap-2 transition-colors shadow-sm">
+                        <Upload size={14} />
+                        {uploadingImage ? 'Enviando...' : 'Trocar Foto (Upload)'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={uploadingImage}
+                          onChange={handleImageFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                      <span className="text-[11px] text-gray-500">
+                        Otimização automática para WebP com zero perda de nitidez
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-gray-400 shrink-0">URL:</span>
+                      <input
+                        type="text"
+                        value={editImageUrl}
+                        onChange={(e) => setEditImageUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-[11px] text-gray-600"
+                      />
+                    </div>
+
+                    {uploadError && (
+                      <div className="text-[11px] text-red-600 font-semibold flex items-center gap-1">
+                        <AlertTriangle size={12} /> {uploadError}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* IDENTIFICAÇÃO E CATEGORIA */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="font-bold text-gray-700">Título / Nome do Produto *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-300 font-semibold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-700">Código SKU</label>
+                  <input
+                    type="text"
+                    value={editSku}
+                    onChange={(e) => setEditSku(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-300 uppercase font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-700">Marca</label>
+                  <select
+                    value={editBrand}
+                    onChange={(e) => setEditBrand(e.target.value as Product['brand'])}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-300 bg-white"
+                  >
+                    <option value="Luckspuma">Luckspuma</option>
+                    <option value="Castor">Castor</option>
+                    <option value="FA Maringá">FA Maringá</option>
+                    <option value="Liderflex">Liderflex</option>
+                    <option value="Flamar">Flamar</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-700">Categoria</label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value as ProductCategory)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-300 bg-white"
+                  >
+                    <option value="colchoes">Colchões</option>
+                    <option value="cama_box">Cama Box</option>
+                    <option value="box_bau">Box Baú</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-700">Medida (Dimensões)</label>
+                  <input
+                    type="text"
+                    value={editDimensions}
+                    onChange={(e) => setEditDimensions(e.target.value)}
+                    placeholder="Ex: 138 x 188 x 34 cm"
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-300"
+                  />
+                </div>
+              </div>
+
+              {/* VALORES E ESTOQUE */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-700">Tabela 10x (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={editPrice}
+                    onChange={(e) => {
+                      setEditPrice(e.target.value);
+                      const p = parseFloat(e.target.value);
+                      if (!isNaN(p)) {
+                        setEditCashPrice((p * 0.95).toFixed(2));
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white font-bold text-gray-900"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-emerald-800">À Vista -5% (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editCashPrice}
+                    onChange={(e) => setEditCashPrice(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-emerald-300 bg-white font-bold text-emerald-700"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-700">Custo Fábrica (R$)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editCost}
+                    onChange={(e) => setEditCost(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-700">Saldo na Loja</label>
+                  <input
+                    type="number"
+                    value={editStock}
+                    onChange={(e) => setEditStock(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white font-bold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-700">Estoque Mínimo</label>
+                  <input
+                    type="number"
+                    value={editMinStock}
+                    onChange={(e) => setEditMinStock(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* DESCRIÇÕES */}
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-700">Descrição Curta (Vitrine)</label>
+                  <input
+                    type="text"
+                    value={editShortDesc}
+                    onChange={(e) => setEditShortDesc(e.target.value)}
+                    placeholder="Breve resumo exibido nos cards"
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-300"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-gray-700">Descrição Completa e Detalhes Técnicos</label>
+                  <textarea
+                    rows={3}
+                    value={editFullDesc}
+                    onChange={(e) => setEditFullDesc(e.target.value)}
+                    placeholder="Detalhes de certificação, estrutura de molas ou densidade da espuma..."
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-300 resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingProd(null)}
+                  className="px-5 py-2.5 rounded-xl border border-gray-300 hover:bg-gray-100 font-bold text-gray-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploadingImage}
+                  className="px-6 py-2.5 rounded-xl bg-[#82260E] hover:bg-[#681e0b] text-white font-bold transition-all shadow-md flex items-center gap-2"
+                >
+                  <CheckCircle2 size={16} />
+                  Salvar Alterações
                 </button>
               </div>
             </form>
