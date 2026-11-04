@@ -16,6 +16,17 @@ import {
   OrderDeliveryStatus
 } from '../types/database';
 import { FLAMAR_AUTHENTIC_PRODUCTS, FLAMAR_AUTHENTIC_SUPPLIERS } from '../lib/flamarCatalog';
+import {
+  carregarProdutosSupabase,
+  salvarProdutoSupabase,
+  carregarClientesSupabase,
+  salvarClienteSupabase,
+  carregarPedidosSupabase,
+  salvarPedidoSupabase,
+  carregarFornecedoresSupabase,
+  salvarFluxoCaixaSupabase,
+  salvarVisitaSupabase
+} from '../lib/flamarDbSync';
 
 interface FlamarContextType {
   environment: AppEnvironment;
@@ -184,6 +195,33 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem(STORAGE_KEYS.VISITS, JSON.stringify(visits));
   }, [visits]);
 
+  // Sincronização inicial com o Supabase ao carregar
+  useEffect(() => {
+    async function carregarDadosIniciais() {
+      const [prodsSupabase, custsSupabase, ordsSupabase, supsSupabase] = await Promise.all([
+        carregarProdutosSupabase(),
+        carregarClientesSupabase(),
+        carregarPedidosSupabase(),
+        carregarFornecedoresSupabase()
+      ]);
+
+      if (prodsSupabase && prodsSupabase.length > 0) {
+        setProducts(prodsSupabase);
+      }
+      if (custsSupabase && custsSupabase.length > 0) {
+        setCustomers(custsSupabase);
+      }
+      if (ordsSupabase && ordsSupabase.length > 0) {
+        setOrders(ordsSupabase);
+      }
+      if (supsSupabase && supsSupabase.length > 0) {
+        setSuppliers(supsSupabase);
+      }
+    }
+
+    carregarDadosIniciais();
+  }, []);
+
   // Registro de Visita com throttling por sessão (não infla com F5 imediato)
   const recordVisit = useCallback((path: string = '/') => {
     try {
@@ -215,6 +253,7 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
 
       setVisits(prev => [newRecord, ...prev].slice(0, 10000));
+      salvarVisitaSupabase(newRecord);
     } catch {
       // safe fallback
     }
@@ -268,6 +307,8 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       return [product, ...prev];
     });
+    // Salva imediatamente no Supabase
+    salvarProdutoSupabase(product);
   };
 
   const deleteProduct = (productId: string) => {
@@ -275,13 +316,18 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const adjustStock = (productId: string, delta: number, _reason: string) => {
-    setProducts(prev =>
-      prev.map(p =>
+    setProducts(prev => {
+      const updated = prev.map(p =>
         p.id === productId
           ? { ...p, stock_qty: Math.max(0, p.stock_qty + delta) }
           : p
-      )
-    );
+      );
+      const target = updated.find(p => p.id === productId);
+      if (target) {
+        salvarProdutoSupabase(target);
+      }
+      return updated;
+    });
   };
 
   // Clientes
@@ -296,6 +342,8 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       created_at: new Date().toISOString().split('T')[0]
     };
     setCustomers(prev => [newCust, ...prev]);
+    // Sincroniza cliente com Supabase
+    salvarClienteSupabase(newCust);
     return newCust;
   };
 
@@ -323,6 +371,7 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       id: `CX-${Date.now().toString().slice(-6)}`
     };
     setCashTransactions(prev => [newTx, ...prev]);
+    salvarFluxoCaixaSupabase(newTx);
   };
 
   const deleteCashTransaction = (id: string) => {
@@ -433,6 +482,7 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     setOrders(prev => [newOrder, ...prev]);
+    salvarPedidoSupabase(newOrder);
 
     // 1. Baixar estoque automaticamente
     orderData.items.forEach(item => {

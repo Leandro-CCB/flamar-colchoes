@@ -336,6 +336,7 @@ export const InventoryView: React.FC = () => {
   const [editImageUrl, setEditImageUrl] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
   const openEditModal = (p: Product) => {
     setEditingProd(p);
@@ -404,6 +405,8 @@ export const InventoryView: React.FC = () => {
 
     upsertProduct(updated);
     setEditingProd(null);
+    setSaveSuccessMsg(`Produto "${updated.name}" atualizado e sincronizado com o Supabase!`);
+    setTimeout(() => setSaveSuccessMsg(null), 4000);
   };
 
   const [newSku, setNewSku] = useState('');
@@ -475,6 +478,18 @@ export const InventoryView: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {saveSuccessMsg && (
+        <div className="bg-emerald-50 border border-emerald-300 text-emerald-800 px-4 py-3 rounded-2xl flex items-center justify-between text-xs font-bold shadow-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+            <span>{saveSuccessMsg}</span>
+          </div>
+          <button onClick={() => setSaveSuccessMsg(null)} className="text-emerald-600 hover:text-emerald-900 text-xs">
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-gray-200 shadow-soft">
         <div>
           <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#82260E]">

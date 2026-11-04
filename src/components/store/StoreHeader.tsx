@@ -33,9 +33,8 @@ export const StoreHeader: React.FC<StoreHeaderProps> = ({
   const totalAmount = cart.reduce((acc, item) => acc + item.product.cash_price * item.quantity, 0);
 
   const navCategories: { id: ProductCategory; label: string }[] = [
-    { id: 'todos', label: 'TODOS OS PRODUTOS' },
-    { id: 'casal', label: 'CAMAS DE CASAL' },
-    { id: 'solteiro', label: 'CAMAS DE SOLTEIRO' },
+    { id: 'casal', label: 'CASAL' },
+    { id: 'solteiro', label: 'SOLTEIRO' },
   ];
 
   const handleSelectCat = (cat: ProductCategory) => {

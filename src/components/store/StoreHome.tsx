@@ -358,7 +358,7 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
                   FILTRO POR MEDIDA OFICIAL DO ESTOQUE
                 </span>
                 <h3 className="text-base sm:text-lg font-serif font-bold text-gray-900 mt-0.5">
-                  Escolha a Medida Desejada ({selectedCategory === 'casal' ? 'Camas de Casal' : 'Camas de Solteiro'})
+                  Escolha a Medida Desejada ({selectedCategory === 'casal' ? 'Casal' : 'Solteiro'})
                 </h3>
               </div>
               <span className="text-xs text-gray-500 font-medium">
