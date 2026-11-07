@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 export const ProductDetailModal: React.FC = () => {
-  const { selectedProductModal, setSelectedProductModal, addToCart, setIsCartDrawerOpen } = useFlamar();
+  const { selectedProductModal, setSelectedProductModal, addToCart, setIsCartDrawerOpen, recordProductClick } = useFlamar();
   const [activeImgIdx, setActiveImgIdx] = useState(0);
 
   if (!selectedProductModal) return null;
@@ -115,6 +115,7 @@ export const ProductDetailModal: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-2.5">
                 <button
                   onClick={() => {
+                    recordProductClick(selectedProductModal, 'click_buy');
                     addToCart(selectedProductModal, 1);
                     setSelectedProductModal(null);
                     setIsCartDrawerOpen(true);
@@ -129,6 +130,7 @@ export const ProductDetailModal: React.FC = () => {
                   href={`https://wa.me/${FLAMAR_COMPANY_INFO.whatsapp_e164}?text=${encodeURIComponent(`Olá Flamar Colchões! Tenho interesse no produto: ${selectedProductModal.name} (SKU ${selectedProductModal.sku}) por R$ ${selectedProductModal.cash_price.toFixed(2)} à vista.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => recordProductClick(selectedProductModal, 'click_whatsapp')}
                   className="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow"
                 >
                   <MessageCircle size={16} />

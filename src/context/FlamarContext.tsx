@@ -12,10 +12,13 @@ import {
   CustomerRecord,
   SupplierRecord,
   VisitRecord,
+  ProductClickRecord,
+  BlogPost,
   PaymentMethod,
   OrderDeliveryStatus
 } from '../types/database';
 import { FLAMAR_AUTHENTIC_PRODUCTS, FLAMAR_AUTHENTIC_SUPPLIERS } from '../lib/flamarCatalog';
+import { INITIAL_BLOG_POSTS } from '../lib/flamarBlogData';
 import {
   carregarProdutosSupabase,
   salvarProdutoSupabase,
@@ -88,10 +91,19 @@ interface FlamarContextType {
   addSupplier: (sup: Omit<SupplierRecord, 'id'>) => void;
   deleteSupplier: (id: string) => void;
 
-  // Analítica & Contador de Visitas
+  // Analítica & Contador de Visitas & Cliques
   visits: VisitRecord[];
   recordVisit: (path?: string) => void;
   clearVisits: () => void;
+  productClicks: ProductClickRecord[];
+  recordProductClick: (product: Product, action?: ProductClickRecord['action']) => void;
+  clearProductClicks: () => void;
+
+  // Blog Flamar
+  blogPosts: BlogPost[];
+  addBlogPost: (post: Omit<BlogPost, 'id' | 'publishedAt'>) => BlogPost;
+  updateBlogPost: (post: BlogPost) => void;
+  deleteBlogPost: (id: string) => void;
 }
 
 const STORAGE_KEYS = {
@@ -104,6 +116,8 @@ const STORAGE_KEYS = {
   SUPPLIERS: 'flamar_erp_suppliers_v1',
   CART: 'flamar_store_cart_v1',
   VISITS: 'flamar_site_visits_v1',
+  PRODUCT_CLICKS: 'flamar_site_product_clicks_v1',
+  BLOG_POSTS: 'flamar_blog_posts_v1',
   LAST_VISIT_SESSION: 'flamar_last_visit_session_v1'
 };
 
@@ -159,6 +173,14 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadStorage<VisitRecord[]>(STORAGE_KEYS.VISITS, [])
   );
 
+  const [productClicks, setProductClicks] = useState<ProductClickRecord[]>(() =>
+    loadStorage<ProductClickRecord[]>(STORAGE_KEYS.PRODUCT_CLICKS, [])
+  );
+
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() =>
+    loadStorage<BlogPost[]>(STORAGE_KEYS.BLOG_POSTS, INITIAL_BLOG_POSTS)
+  );
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
   }, [products]);
@@ -194,6 +216,14 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.VISITS, JSON.stringify(visits));
   }, [visits]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.PRODUCT_CLICKS, JSON.stringify(productClicks));
+  }, [productClicks]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.BLOG_POSTS, JSON.stringify(blogPosts));
+  }, [blogPosts]);
 
   // Sincronização inicial com o Supabase ao carregar
   useEffect(() => {
@@ -262,6 +292,58 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const clearVisits = () => {
     setVisits([]);
     sessionStorage.removeItem(STORAGE_KEYS.LAST_VISIT_SESSION);
+  };
+
+  // Registro de Cliques nos Itens do Catálogo
+  const recordProductClick = useCallback((product: Product, action: ProductClickRecord['action'] = 'view_details') => {
+    try {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+      const clickRecord: ProductClickRecord = {
+        id: `CLICK-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        productId: product.id,
+        productName: product.name,
+        category: product.category,
+        action,
+        timestamp: now.toISOString(),
+        date: dateStr
+      };
+
+      setProductClicks(prev => [clickRecord, ...prev].slice(0, 15000));
+    } catch {
+      // safe fallback
+    }
+  }, []);
+
+  const clearProductClicks = () => {
+    setProductClicks([]);
+  };
+
+  // Operações do Blog Flamar
+  const addBlogPost = (postData: Omit<BlogPost, 'id' | 'publishedAt'>): BlogPost => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    
+    const newPost: BlogPost = {
+      ...postData,
+      id: `POST-${Date.now()}`,
+      publishedAt: dateStr,
+      viewsCount: 0
+    };
+
+    setBlogPosts(prev => [newPost, ...prev]);
+    return newPost;
+  };
+
+  const updateBlogPost = (updatedPost: BlogPost) => {
+    setBlogPosts(prev => prev.map(p => p.id === updatedPost.id ? updatedPost : p));
+  };
+
+  const deleteBlogPost = (id: string) => {
+    setBlogPosts(prev => prev.filter(p => p.id !== id));
   };
 
   // Efeito inicial para registrar a visita do usuário ao carregar a página
@@ -646,7 +728,14 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         deleteSupplier,
         visits,
         recordVisit,
-        clearVisits
+        clearVisits,
+        productClicks,
+        recordProductClick,
+        clearProductClicks,
+        blogPosts,
+        addBlogPost,
+        updateBlogPost,
+        deleteBlogPost
       }}
     >
       {children}

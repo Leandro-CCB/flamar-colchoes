@@ -12,7 +12,7 @@ import { ErpLayout } from './components/erp/ErpLayout';
 
 const MainApp: React.FC = () => {
   const { environment } = useFlamar();
-  const [storeSection, setStoreSection] = useState<'catalogo' | 'sobre' | 'localizacao'>('catalogo');
+  const [storeSection, setStoreSection] = useState<'catalogo' | 'sobre' | 'localizacao' | 'blog'>('catalogo');
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF7F4] text-[#231B18] font-sans">

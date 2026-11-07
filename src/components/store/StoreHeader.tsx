@@ -4,12 +4,12 @@ import { FlamarLogo } from '../common/FlamarLogo';
 import { ProductCategory } from '../../types/database';
 import {
   Truck, ShieldCheck, CreditCard, PhoneCall, Search,
-  ShoppingBag, MapPin, Menu, X, Award, LayoutDashboard
+  ShoppingBag, MapPin, Menu, X, Award, LayoutDashboard, BookOpen
 } from 'lucide-react';
 
 interface StoreHeaderProps {
-  activeSection: 'catalogo' | 'sobre' | 'localizacao';
-  setActiveSection: (s: 'catalogo' | 'sobre' | 'localizacao') => void;
+  activeSection: 'catalogo' | 'sobre' | 'localizacao' | 'blog';
+  setActiveSection: (s: 'catalogo' | 'sobre' | 'localizacao' | 'blog') => void;
 }
 
 export const StoreHeader: React.FC<StoreHeaderProps> = ({
@@ -123,6 +123,21 @@ export const StoreHeader: React.FC<StoreHeaderProps> = ({
           {/* Links Institucionais & Carrinho */}
           <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
             <button
+              onClick={() => setActiveSection('blog')}
+              className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-colors ${
+                activeSection === 'blog'
+                  ? 'bg-brand-50 text-[#82260E] font-bold ring-1 ring-[#82260E]/20'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <BookOpen size={16} className="text-[#82260E]" />
+              <div className="leading-tight text-left">
+                <span className="text-xs font-bold block">Blog do Sono</span>
+                <span className="text-[10px] text-gray-500">Dicas & Densidades</span>
+              </div>
+            </button>
+
+            <button
               onClick={() => setActiveSection('sobre')}
               className={`hidden xl:flex flex-col text-left px-3 py-1.5 rounded-xl transition-colors ${
                 activeSection === 'sobre'
@@ -210,6 +225,20 @@ export const StoreHeader: React.FC<StoreHeaderProps> = ({
               </button>
             );
           })}
+          {/* Outras Abas da Loja (Blog, História, Endereço) */}
+          <div className="h-5 w-[1px] bg-gray-300 mx-1 shrink-0" />
+
+          <button
+            onClick={() => setActiveSection('blog')}
+            className={`px-3.5 py-2 rounded-lg text-[11.5px] font-extrabold uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              activeSection === 'blog'
+                ? 'bg-[#82260E] text-white shadow-sm ring-2 ring-[#D4AF37]/60'
+                : 'bg-white text-gray-800 border border-gray-200/80 hover:border-[#82260E] hover:text-[#82260E]'
+            }`}
+          >
+            <BookOpen size={13} />
+            <span>BLOG DO SONO</span>
+          </button>
         </div>
       </nav>
 
@@ -232,6 +261,15 @@ export const StoreHeader: React.FC<StoreHeaderProps> = ({
             ))}
           </div>
           <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                setActiveSection('blog');
+                setMobileMenuOpen(false);
+              }}
+              className="px-3 py-2 rounded-lg bg-[#82260E] text-white text-xs font-bold flex items-center gap-1.5"
+            >
+              <BookOpen size={14} /> Blog do Sono
+            </button>
             <button
               onClick={() => {
                 setActiveSection('sobre');

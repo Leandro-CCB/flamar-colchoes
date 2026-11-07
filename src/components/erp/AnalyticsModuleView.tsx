@@ -24,7 +24,7 @@ const MESES_NOME = [
 ];
 
 export const AnalyticsModuleView: React.FC = () => {
-  const { visits, recordVisit } = useFlamar();
+  const { visits, recordVisit, productClicks, clearProductClicks, products } = useFlamar();
 
   const [periodoFiltro, setPeriodoFiltro] = useState<'30dias' | 'ano' | 'tudo'>('30dias');
   const [mesSelecionado, setMesSelecionado] = useState<string>('todos');
@@ -352,6 +352,133 @@ export const AnalyticsModuleView: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── RANKING DE ITENS MAIS CLICADOS NO SITE (PRODUTOS MAIS POPULARES) ── */}
+      <div className="bg-white p-6 rounded-3xl border border-gray-200 shadow-soft space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 gap-2">
+          <div>
+            <h3 className="text-base font-serif font-bold text-gray-900 flex items-center gap-2">
+              <Flame size={18} className="text-[#82260E]" />
+              Ranking de Produtos Mais Clicados no Site
+            </h3>
+            <p className="text-xs text-gray-500">
+              Mede exatamente o interesse do público: quem abriu detalhes, clicou em comprar ou chamou no WhatsApp.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#82260E] bg-brand-50 px-3 py-1 rounded-full border border-brand-200">
+              Total de Cliques: {productClicks.length}
+            </span>
+            {productClicks.length > 0 && (
+              <button
+                onClick={() => {
+                  if (confirm('Deseja zerar o contador de cliques dos produtos?')) {
+                    clearProductClicks();
+                  }
+                }}
+                className="text-[11px] text-gray-400 hover:text-red-600 px-2 py-1 rounded hover:bg-gray-100 flex items-center gap-1"
+                title="Zerar métricas de cliques"
+              >
+                <RotateCcw size={12} /> Zerar
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Tabela / Cards de Produtos Mais Clicados */}
+        {(() => {
+          // Agrupa cliques por produto
+          const clicksMap: Record<string, { total: number; view: number; buy: number; zap: number; name: string; cat: string }> = {};
+          
+          productClicks.forEach((c) => {
+            if (!clicksMap[c.productId]) {
+              clicksMap[c.productId] = {
+                total: 0,
+                view: 0,
+                buy: 0,
+                zap: 0,
+                name: c.productName,
+                cat: c.category
+              };
+            }
+            clicksMap[c.productId].total += 1;
+            if (c.action === 'view_details') clicksMap[c.productId].view += 1;
+            if (c.action === 'click_buy') clicksMap[c.productId].buy += 1;
+            if (c.action === 'click_whatsapp') clicksMap[c.productId].zap += 1;
+          });
+
+          const ranking = Object.entries(clicksMap)
+            .map(([pId, data]) => ({ productId: pId, ...data }))
+            .sort((a, b) => b.total - a.total);
+
+          const maxClicks = ranking.length > 0 ? ranking[0].total : 1;
+
+          if (ranking.length === 0) {
+            return (
+              <div className="py-10 text-center text-xs text-gray-400">
+                <Compass size={36} className="text-gray-300 mx-auto mb-2" />
+                <p>Nenhum clique em produto registrado ainda.</p>
+                <p className="text-[11px] text-gray-400 mt-1">Conforme os visitantes navegarem e clicarem nos colchões da vitrine, o ranking aparecerá aqui em tempo real.</p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-3 pt-2">
+              {ranking.map((item, index) => {
+                const prodReal = products.find(p => p.id === item.productId);
+                const percent = Math.round((item.total / maxClicks) * 100);
+
+                return (
+                  <div key={item.productId} className="p-3 rounded-2xl bg-[#FAF7F4] border border-gray-100 hover:border-[#82260E]/30 transition-all space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center font-extrabold text-xs shrink-0 ${
+                          index === 0 ? 'bg-[#D4AF37] text-white shadow' : index === 1 ? 'bg-gray-300 text-gray-800' : index === 2 ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-600'
+                        }`}>
+                          {index + 1}º
+                        </span>
+                        {prodReal?.image_url && (
+                          <img src={prodReal.image_url} alt="" className="w-10 h-10 object-contain rounded bg-white p-0.5 border border-gray-200 shrink-0" />
+                        )}
+                        <div>
+                          <div className="font-bold text-gray-900 text-sm">{item.name}</div>
+                          <div className="text-[11px] text-gray-500">
+                            Categoria: <span className="font-semibold uppercase text-brand-800">{item.cat}</span> • Preço: <strong className="text-emerald-700">R$ {prodReal?.cash_price?.toFixed(2) || '-'}</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 text-[11px] font-bold border border-blue-200" title="Cliques em Ver Detalhes">
+                          👁️ {item.view}
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200" title="Cliques em Comprar">
+                          🛒 {item.buy}
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-green-50 text-green-800 text-[11px] font-bold border border-green-200" title="Cliques para WhatsApp">
+                          💬 {item.zap}
+                        </span>
+                        <span className="px-2.5 py-1 rounded-xl bg-[#82260E] text-white font-extrabold text-xs">
+                          {item.total} cliques
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Barra de Progresso Relativo */}
+                    <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        style={{ width: `${percent}%` }}
+                        className="h-full bg-gradient-to-r from-[#82260E] via-[#B83918] to-[#D4AF37] rounded-full"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── Distribuição por Horário (00:00 às 23:00) ───────────── */}

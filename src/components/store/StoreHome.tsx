@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useFlamar } from '../../context/FlamarContext';
+import { Product, ProductCategory, BlogPost } from '../../types/database';
 import { FLAMAR_COMPANY_INFO } from '../../lib/flamarCatalog';
-import { Product, ProductCategory } from '../../types/database';
 import {
-  ShieldCheck, Truck, CreditCard, Award, MessageCircle,
-  Phone, MapPin, CheckCircle2, Eye, ShoppingCart, Sparkles,
-  ChevronRight, Layers, Ruler, Weight, Building2, Clock
+  Sparkles, ShieldCheck, Award, Truck, Check, Star,
+  Eye, ShoppingCart, ChevronRight, MessageCircle, MapPin,
+  Flame, Clock, Filter, BookOpen, Building2, Phone, Ruler, Layers
 } from 'lucide-react';
 
 interface StoreHomeProps {
-  activeSection: 'catalogo' | 'sobre' | 'localizacao';
-  setActiveSection: (s: 'catalogo' | 'sobre' | 'localizacao') => void;
+  activeSection: 'catalogo' | 'sobre' | 'localizacao' | 'blog';
+  setActiveSection: (s: 'catalogo' | 'sobre' | 'localizacao' | 'blog') => void;
 }
 
 export const StoreHome: React.FC<StoreHomeProps> = ({
@@ -24,8 +24,12 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
     searchQuery,
     setSelectedProductModal,
     addToCart,
-    setIsCartDrawerOpen
+    setIsCartDrawerOpen,
+    recordProductClick,
+    blogPosts
   } = useFlamar();
+
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
 
   const [heroIndex, setHeroIndex] = useState(0);
   const [selectedSizeFilter, setSelectedSizeFilter] = useState<string>('todos');
@@ -96,6 +100,7 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
   });
 
   const handleBuyNow = (p: Product) => {
+    recordProductClick(p, 'click_buy');
     addToCart(p, 1);
     setIsCartDrawerOpen(true);
   };
@@ -237,6 +242,128 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
               />
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── SEÇÃO BLOG DO SONO (VISUAL PÚBLICO) ──
+  if (activeSection === 'blog') {
+    const postsPublicados = blogPosts.filter(p => p.published);
+
+    if (selectedPost) {
+      return (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 animate-fade-in">
+          <button
+            onClick={() => setSelectedPost(null)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold mb-6 transition-colors"
+          >
+            ← Voltar para todos os artigos
+          </button>
+
+          <article className="bg-white rounded-3xl border border-brand-100 shadow-soft overflow-hidden p-6 sm:p-10 space-y-6">
+            <div className="space-y-3">
+              <span className="inline-block px-3 py-1 rounded-full bg-[#82260E]/10 text-[#82260E] text-xs font-extrabold uppercase tracking-wider">
+                {selectedPost.category}
+              </span>
+              <h1 className="text-2xl sm:text-4xl font-serif font-black text-gray-900 leading-tight">
+                {selectedPost.title}
+              </h1>
+              <div className="flex items-center gap-4 text-xs text-gray-500 pt-1 border-b pb-4">
+                <span>Por: <strong>{selectedPost.author}</strong></span>
+                <span>•</span>
+                <span>Publicado em {selectedPost.publishedAt}</span>
+                <span>•</span>
+                <span>{selectedPost.readTimeMinutes} min de leitura</span>
+              </div>
+            </div>
+
+            <div className="h-72 sm:h-96 w-full rounded-2xl overflow-hidden bg-gray-100">
+              <img
+                src={selectedPost.imageUrl}
+                alt={selectedPost.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div className="prose prose-brand max-w-none text-gray-800 leading-relaxed text-sm sm:text-base whitespace-pre-line space-y-4">
+              {selectedPost.content}
+            </div>
+
+            <div className="p-6 rounded-2xl bg-[#FFF7F4] border border-[#FCD5C8] flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+              <div>
+                <h4 className="font-serif font-bold text-gray-900 text-base">Ficou com alguma dúvida sobre o seu colchão?</h4>
+                <p className="text-xs text-gray-600 mt-1">Converse com nossos especialistas com 37 anos de experiência e ganhe consultoria personalizada.</p>
+              </div>
+              <a
+                href={`https://wa.me/${FLAMAR_COMPANY_INFO.whatsapp_e164}?text=${encodeURIComponent(`Olá! Li o artigo "${selectedPost.title}" no Blog da Flamar e gostaria de ajuda para escolher meu colchão.`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 shrink-0 shadow"
+              >
+                Falar no WhatsApp
+              </a>
+            </div>
+          </article>
+        </div>
+      );
+    }
+
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 animate-fade-in space-y-8">
+        <div className="text-center max-w-2xl mx-auto space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#82260E]/10 text-[#82260E] text-xs font-extrabold uppercase tracking-widest">
+            <BookOpen size={14} />
+            <span>GUIA DO SONO FLAMAR</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-serif font-black text-gray-900">
+            Tudo o que você precisa saber sobre Colchões e Saúde da Coluna
+          </h1>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Dicas práticas de quem entende de sono há 37 anos. Descubra a densidade ideal, a diferença de molas ensacadas e como dormir melhor todos os dias.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {postsPublicados.map((post) => (
+            <div
+              key={post.id}
+              onClick={() => setSelectedPost(post)}
+              className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-soft hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between group"
+            >
+              <div>
+                <div className="relative h-48 bg-gray-100 overflow-hidden">
+                  <img
+                    src={post.imageUrl}
+                    alt={post.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/75 backdrop-blur-xs text-white text-[10px] font-extrabold uppercase">
+                    {post.category}
+                  </span>
+                </div>
+
+                <div className="p-6 space-y-2.5">
+                  <div className="flex items-center gap-3 text-[11px] text-gray-400">
+                    <span>{post.publishedAt}</span>
+                    <span>•</span>
+                    <span>{post.readTimeMinutes} min de leitura</span>
+                  </div>
+                  <h3 className="font-serif font-bold text-gray-900 text-lg leading-snug group-hover:text-[#82260E] transition-colors">
+                    {post.title}
+                  </h3>
+                  <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">
+                    {post.summary}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-6 pt-0 flex items-center justify-between text-xs font-bold text-[#82260E]">
+                <span>Ler artigo completo</span>
+                <span>→</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -457,7 +584,10 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
             >
               {/* Imagem Real do Produto */}
               <div
-                onClick={() => setSelectedProductModal(product)}
+                onClick={() => {
+                  recordProductClick(product, 'view_details');
+                  setSelectedProductModal(product);
+                }}
                 className="relative h-56 bg-[#FAF7F4] overflow-hidden cursor-pointer flex items-center justify-center p-3"
               >
                 <img
@@ -491,7 +621,10 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
                   </div>
 
                   <h3
-                    onClick={() => setSelectedProductModal(product)}
+                    onClick={() => {
+                  recordProductClick(product, 'view_details');
+                  setSelectedProductModal(product);
+                }}
                     className="font-bold text-gray-900 text-base leading-snug hover:text-[#82260E] cursor-pointer line-clamp-2"
                   >
                     {product.name}
@@ -546,7 +679,10 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
 
                   <div className="grid grid-cols-4 gap-2">
                     <button
-                      onClick={() => setSelectedProductModal(product)}
+                      onClick={() => {
+                  recordProductClick(product, 'view_details');
+                  setSelectedProductModal(product);
+                }}
                       className="col-span-1 py-2.5 rounded-xl border border-gray-200 hover:border-[#82260E] text-gray-700 hover:text-[#82260E] flex items-center justify-center transition-colors"
                       title="Ver Fotos e Ficha Técnica"
                     >

@@ -6,11 +6,13 @@ import { ErpSection } from '../../types/database';
 import { InventoryView } from './ErpOperationsModules';
 import { CustomersModuleView } from './CustomersModuleView';
 import { AnalyticsModuleView } from './AnalyticsModuleView';
+import { BlogModuleView } from './BlogModuleView';
 import {
   Package,
   ShoppingBag,
   Users,
   Eye,
+  BookOpen,
   Menu,
   X
 } from 'lucide-react';
@@ -45,6 +47,12 @@ export const ErpLayout: React.FC = () => {
       label: 'Visitas & Métricas',
       icon: <Eye size={16} />,
       badge: visits.length > 0 ? String(visits.length) : undefined
+    },
+    {
+      id: 'blog',
+      label: 'Blog do Sono',
+      icon: <BookOpen size={16} />,
+      badge: '3'
     },
   ];
 
@@ -137,6 +145,7 @@ export const ErpLayout: React.FC = () => {
           {erpSection === 'inventory' && <InventoryView />}
           {erpSection === 'customers' && <CustomersModuleView />}
           {erpSection === 'analytics' && <AnalyticsModuleView />}
+          {erpSection === 'blog' && <BlogModuleView />}
         </main>
       </div>
     </div>

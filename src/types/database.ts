@@ -14,6 +14,7 @@ export type ErpSection =
   | 'orders'
   | 'customers'
   | 'analytics'
+  | 'blog'
   | 'suppliers'
   | 'dre'
   | 'settings';
@@ -194,6 +195,31 @@ export interface VisitRecord {
   path: string;
   referrer: string;
   userAgent?: string;
+}
+
+export interface ProductClickRecord {
+  id: string;
+  productId: string;
+  productName: string;
+  category: string;
+  action: 'view_details' | 'click_buy' | 'click_whatsapp';
+  timestamp: string; // ISO string
+  date: string; // YYYY-MM-DD
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string;
+  content: string; // Suporta parágrafos / Markdown
+  category: string;
+  author: string;
+  readTimeMinutes: number;
+  imageUrl: string;
+  published: boolean;
+  publishedAt: string; // ISO ou YYYY-MM-DD
+  viewsCount?: number;
 }
 
 export interface SupplierRecord {
