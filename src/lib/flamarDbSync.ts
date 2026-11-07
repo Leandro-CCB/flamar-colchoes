@@ -1,5 +1,17 @@
 import { supabase } from './supabase';
-import { Product, CustomerRecord, ErpOrder, CashTransaction, PayableAccount, ReceivableAccount, SupplierRecord, VisitRecord } from '../types/database';
+import {
+  Product,
+  CustomerRecord,
+  ErpOrder,
+  CashTransaction,
+  PayableAccount,
+  ReceivableAccount,
+  SupplierRecord,
+  VisitRecord,
+  ProductClickRecord,
+  LeadRecord,
+  BlogPost
+} from '../types/database';
 import { FLAMAR_AUTHENTIC_PRODUCTS, FLAMAR_AUTHENTIC_SUPPLIERS } from './flamarCatalog';
 
 /**
@@ -238,7 +250,32 @@ export async function salvarFluxoCaixaSupabase(tx: CashTransaction): Promise<voi
   }
 }
 
-// 6. VISITAS
+// 6. VISITAS (Carregar e Salvar no Supabase)
+export async function carregarVisitasSupabase(): Promise<VisitRecord[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('flamar_visitas')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(5000);
+
+    if (error || !data) return null;
+    return data.map((row: any) => ({
+      id: row.id,
+      timestamp: row.timestamp,
+      date: row.date,
+      month: row.month,
+      hour: row.hour,
+      dayOfWeek: row.day_of_week ?? row.dayOfWeek ?? 0,
+      path: row.path || '/',
+      referrer: row.referrer || 'Direto',
+      userAgent: row.user_agent || row.userAgent || ''
+    }));
+  } catch {
+    return null;
+  }
+}
+
 export async function salvarVisitaSupabase(v: VisitRecord): Promise<void> {
   try {
     await supabase.from('flamar_visitas').insert({
@@ -254,5 +291,117 @@ export async function salvarVisitaSupabase(v: VisitRecord): Promise<void> {
     });
   } catch (err) {
     console.error('[Flamar Supabase] Erro ao salvar visita:', err);
+  }
+}
+
+// 7. CLIQUES EM PRODUTOS (Mais Clicados / Populares no Supabase)
+export async function carregarCliquesSupabase(): Promise<ProductClickRecord[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('flamar_cliques')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(10000);
+
+    if (error || !data) return null;
+    return data.map((row: any) => ({
+      id: row.id,
+      productId: row.product_id || row.productId,
+      productName: row.product_name || row.productName,
+      category: row.category,
+      action: row.action,
+      timestamp: row.timestamp,
+      date: row.date
+    }));
+  } catch {
+    return null;
+  }
+}
+
+export async function salvarCliqueSupabase(c: ProductClickRecord): Promise<void> {
+  try {
+    await supabase.from('flamar_cliques').insert({
+      id: c.id,
+      product_id: c.productId,
+      product_name: c.productName,
+      category: c.category,
+      action: c.action,
+      timestamp: c.timestamp,
+      date: c.date
+    });
+  } catch (err) {
+    console.error('[Flamar Supabase] Erro ao salvar clique:', err);
+  }
+}
+
+// 8. LEADS COMERCIAIS (CRM Chatbot no Supabase)
+export async function carregarLeadsSupabase(): Promise<LeadRecord[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('flamar_leads')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export async function salvarLeadSupabase(l: LeadRecord): Promise<void> {
+  try {
+    await supabase.from('flamar_leads').upsert(l);
+  } catch (err) {
+    console.error('[Flamar Supabase] Erro ao salvar lead:', err);
+  }
+}
+
+// 9. BLOG POSTS (Supabase)
+export async function carregarBlogPostsSupabase(): Promise<BlogPost[] | null> {
+  try {
+    const { data, error } = await supabase
+      .from('flamar_blog_posts')
+      .select('*')
+      .order('published_at', { ascending: false });
+
+    if (error || !data || data.length === 0) return null;
+    return data.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      summary: row.summary,
+      content: row.content,
+      category: row.category,
+      author: row.author,
+      readTimeMinutes: row.read_time_minutes ?? row.readTimeMinutes ?? 4,
+      imageUrl: row.image_url ?? row.imageUrl,
+      published: row.published ?? true,
+      publishedAt: row.published_at ?? row.publishedAt,
+      viewsCount: row.views_count ?? row.viewsCount ?? 0
+    }));
+  } catch {
+    return null;
+  }
+}
+
+export async function salvarBlogPostSupabase(post: BlogPost): Promise<void> {
+  try {
+    await supabase.from('flamar_blog_posts').upsert({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      summary: post.summary,
+      content: post.content,
+      category: post.category,
+      author: post.author,
+      read_time_minutes: post.readTimeMinutes,
+      image_url: post.imageUrl,
+      published: post.published,
+      published_at: post.publishedAt,
+      views_count: post.viewsCount
+    });
+  } catch (err) {
+    console.error('[Flamar Supabase] Erro ao salvar post blog:', err);
   }
 }

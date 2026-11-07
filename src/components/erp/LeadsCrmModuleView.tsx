@@ -70,10 +70,13 @@ export const LeadsCrmModuleView: React.FC = () => {
   const handleOpenWhatsApp = (lead: LeadRecord) => {
     const cleanPhone = lead.phone.replace(/\D/g, '');
     const phoneWithDdd = cleanPhone.length <= 11 ? `55${cleanPhone}` : cleanPhone;
+    const localizacao = lead.neighborhood && lead.city
+      ? `${lead.neighborhood}, ${lead.city}`
+      : (lead.address || 'São Paulo');
     const msg = encodeURIComponent(
       `Olá ${lead.name}! Sou consultor da Flamar Colchões.\n\n` +
       `Recebi sua solicitação do colchão *${lead.product_name || 'Flamar'}* no valor de R$ ${(lead.total_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.\n\n` +
-      `Gostaria de confirmar seus dados para agendarmos a entrega no endereço: *${lead.address || 'São Paulo'}*?`
+      `Gostaria de confirmar seus dados para agendarmos a entrega na região de *${localizacao}*?`
     );
     window.open(`https://wa.me/${phoneWithDdd}?text=${msg}`, '_blank');
   };
@@ -250,7 +253,16 @@ export const LeadsCrmModuleView: React.FC = () => {
                     <td className="p-4 max-w-xs">
                       <div className="flex items-start gap-1 text-gray-700">
                         <MapPin size={13} className="text-[#82260E] shrink-0 mt-0.5" />
-                        <span className="line-clamp-2">{lead.address || 'A combinar / Não informado'}</span>
+                        <div>
+                          <div className="font-bold text-gray-900">
+                            {lead.neighborhood && lead.city
+                              ? `${lead.neighborhood}, ${lead.city}`
+                              : lead.city || lead.neighborhood || 'Região não informada'}
+                          </div>
+                          {lead.address && lead.address !== lead.neighborhood && (
+                            <div className="text-[11px] text-gray-500 line-clamp-1">{lead.address}</div>
+                          )}
+                        </div>
                       </div>
                     </td>
 

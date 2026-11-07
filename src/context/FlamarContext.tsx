@@ -30,7 +30,14 @@ import {
   salvarPedidoSupabase,
   carregarFornecedoresSupabase,
   salvarFluxoCaixaSupabase,
-  salvarVisitaSupabase
+  carregarVisitasSupabase,
+  salvarVisitaSupabase,
+  carregarCliquesSupabase,
+  salvarCliqueSupabase,
+  carregarLeadsSupabase,
+  salvarLeadSupabase,
+  carregarBlogPostsSupabase,
+  salvarBlogPostSupabase
 } from '../lib/flamarDbSync';
 
 interface FlamarContextType {
@@ -246,11 +253,24 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Sincronização inicial com o Supabase ao carregar
   useEffect(() => {
     async function carregarDadosIniciais() {
-      const [prodsSupabase, custsSupabase, ordsSupabase, supsSupabase] = await Promise.all([
+      const [
+        prodsSupabase,
+        custsSupabase,
+        ordsSupabase,
+        supsSupabase,
+        visitasSupabase,
+        cliquesSupabase,
+        leadsSupabase,
+        postsSupabase
+      ] = await Promise.all([
         carregarProdutosSupabase(),
         carregarClientesSupabase(),
         carregarPedidosSupabase(),
-        carregarFornecedoresSupabase()
+        carregarFornecedoresSupabase(),
+        carregarVisitasSupabase(),
+        carregarCliquesSupabase(),
+        carregarLeadsSupabase(),
+        carregarBlogPostsSupabase()
       ]);
 
       if (prodsSupabase && prodsSupabase.length > 0) {
@@ -264,6 +284,18 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       if (supsSupabase && supsSupabase.length > 0) {
         setSuppliers(supsSupabase);
+      }
+      if (visitasSupabase && visitasSupabase.length > 0) {
+        setVisits(visitasSupabase);
+      }
+      if (cliquesSupabase && cliquesSupabase.length > 0) {
+        setProductClicks(cliquesSupabase);
+      }
+      if (leadsSupabase && leadsSupabase.length > 0) {
+        setLeads(leadsSupabase);
+      }
+      if (postsSupabase && postsSupabase.length > 0) {
+        setBlogPosts(postsSupabase);
       }
     }
 
@@ -330,6 +362,7 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
 
       setProductClicks(prev => [clickRecord, ...prev].slice(0, 15000));
+      salvarCliqueSupabase(clickRecord);
     } catch {
       // safe fallback
     }
@@ -353,11 +386,13 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     setBlogPosts(prev => [newPost, ...prev]);
+    salvarBlogPostSupabase(newPost);
     return newPost;
   };
 
   const updateBlogPost = (updatedPost: BlogPost) => {
     setBlogPosts(prev => prev.map(p => p.id === updatedPost.id ? updatedPost : p));
+    salvarBlogPostSupabase(updatedPost);
   };
 
   const deleteBlogPost = (id: string) => {
@@ -375,16 +410,19 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       return [lead, ...prev];
     });
+    salvarLeadSupabase(lead);
   };
 
   const updateLeadStatus = (leadId: string, status: LeadStatus, notes?: string) => {
     setLeads(prev => prev.map(l => {
       if (l.id === leadId) {
-        return {
+        const updated = {
           ...l,
           status,
           notes: notes !== undefined ? notes : l.notes
         };
+        salvarLeadSupabase(updated);
+        return updated;
       }
       return l;
     }));
@@ -458,6 +496,7 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     setOrders(prev => [newOrder, ...prev]);
+    salvarPedidoSupabase(newOrder);
 
     // Atualiza status do lead para convertido
     updateLeadStatus(leadId, 'convertido_venda', `Convertido no Pedido ERP #${newOrder.id}`);

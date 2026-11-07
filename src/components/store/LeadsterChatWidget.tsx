@@ -58,7 +58,8 @@ export const LeadsterChatWidget: React.FC = () => {
   const [backPain, setBackPain] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('Padrão');
-  const [cep, setCep] = useState<string>('');
+  const [bairro, setBairro] = useState<string>('');
+  const [cidade, setCidade] = useState<string>('');
   const [address, setAddress] = useState<string>('');
   const [customerName, setCustomerName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
@@ -131,10 +132,10 @@ export const LeadsterChatWidget: React.FC = () => {
       created_at: new Date().toISOString(),
       name: overrides?.name !== undefined ? overrides.name : customerName,
       phone: overrides?.phone !== undefined ? overrides.phone : customerPhone,
-      cep: overrides?.cep !== undefined ? overrides.cep : cep,
+      cep: overrides?.cep !== undefined ? overrides.cep : '',
       address: overrides?.address !== undefined ? overrides.address : address,
-      neighborhood: 'São Paulo',
-      city: 'São Paulo',
+      neighborhood: overrides?.neighborhood !== undefined ? overrides.neighborhood : bairro,
+      city: overrides?.city !== undefined ? overrides.city : (cidade || 'São Paulo'),
       status: overrides?.status || 'novo',
       product_id: currentProd?.id,
       product_name: currentProd?.name,
@@ -220,7 +221,7 @@ export const LeadsterChatWidget: React.FC = () => {
     syncLeadState({ product_id: prod.id, status: 'orcamento_gerado' });
     setStep('ask_cep_address');
     addBotMessage(
-      `Excelente escolha! O **${prod.name}** tem 3 anos de garantia e entrega expressa.\n\nPara calcularmos a rota de entrega grátis da fábrica, qual é o seu **CEP ou Bairro/Cidade**?`,
+      `Excelente escolha! O **${prod.name}** tem 3 anos de garantia e entrega rápida da fábrica.\n\nPara calcularmos o frete e a rota de entrega, em qual **Bairro e Cidade** você mora? *(a rua e número podemos confirmar depois!)*`,
       600
     );
   };
@@ -229,15 +230,31 @@ export const LeadsterChatWidget: React.FC = () => {
     if (e) e.preventDefault();
     if (!inputText.trim()) return;
     const txt = inputText.trim();
-    setCep(txt);
+    
+    // Anota exatamente o que o cliente digitou (Bairro, Cidade e/ou Rua se ele já colocou)
     setAddress(txt);
+    
+    // Tenta extrair bairro/cidade se tiver formato "Bairro, Cidade" ou similar
+    const partes = txt.split(/[-–,/]/).map(s => s.trim()).filter(Boolean);
+    if (partes.length >= 2) {
+      setBairro(partes[0]);
+      setCidade(partes[1]);
+    } else {
+      setBairro(txt);
+      setCidade('Grande SP');
+    }
+
     addUserMessage(txt);
     setInputText('');
-    syncLeadState({ address: txt, cep: txt });
+    syncLeadState({
+      address: txt,
+      neighborhood: partes.length >= 2 ? partes[0] : txt,
+      city: partes.length >= 2 ? partes[1] : 'Grande SP'
+    });
 
     setStep('ask_name');
     addBotMessage(
-      'Ótimo! Temos frota própria para essa região com entrega rápida.\n\nComo posso te chamar? Qual é o seu **Nome Completo**?',
+      'Anotado! Temos rota de entrega frequente nessa região com frota própria.\n\nComo posso te chamar? Qual é o seu **Nome Completo**?',
       500
     );
   };
@@ -607,7 +624,7 @@ export const LeadsterChatWidget: React.FC = () => {
               onChange={(e) => setInputText(e.target.value)}
               placeholder={
                 step === 'ask_cep_address'
-                  ? 'Digite seu CEP ou Bairro/Cidade...'
+                  ? 'Digite seu Bairro e Cidade (ex: Lapa, SP)...'
                   : step === 'ask_name'
                   ? 'Digite seu Nome Completo...'
                   : step === 'ask_phone'

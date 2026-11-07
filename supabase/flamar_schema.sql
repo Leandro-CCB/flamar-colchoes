@@ -250,5 +250,80 @@ CREATE POLICY "Acesso total flamar_contas_pagar" ON flamar_contas_pagar FOR ALL 
 DROP POLICY IF EXISTS "Acesso total flamar_contas_receber" ON flamar_contas_receber;
 CREATE POLICY "Acesso total flamar_contas_receber" ON flamar_contas_receber FOR ALL USING (true) WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Acesso total flamar_visitas" ON flamar_visitas;
-CREATE POLICY "Acesso total flamar_visitas" ON flamar_visitas FOR ALL USING (true) WITH CHECK (true);
+-- 9. TABELA DE CLIQUES EM PRODUTOS (PRODUTOS MAIS CLICADOS / TELEMETRIA)
+CREATE TABLE IF NOT EXISTS flamar_cliques (
+  id TEXT PRIMARY KEY,
+  product_id TEXT NOT NULL,
+  product_name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  action TEXT NOT NULL DEFAULT 'view_details',
+  timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  date TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_flamar_cliques_prod ON flamar_cliques(product_id);
+CREATE INDEX IF NOT EXISTS idx_flamar_cliques_data ON flamar_cliques(date);
+
+-- 10. TABELA DE LEADS & ORÇAMENTOS (CRM COMERCIAL CHATBOT LEADSTER)
+CREATE TABLE IF NOT EXISTS flamar_leads (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  cep TEXT,
+  address TEXT,
+  neighborhood TEXT,
+  city TEXT,
+  status TEXT NOT NULL DEFAULT 'novo',
+  product_id TEXT,
+  product_name TEXT,
+  sku TEXT,
+  size_label TEXT,
+  dimensions TEXT,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  unit_price NUMERIC(10,2) NOT NULL DEFAULT 0,
+  cash_price NUMERIC(10,2) NOT NULL DEFAULT 0,
+  discount NUMERIC(10,2) NOT NULL DEFAULT 0,
+  shipping_fee NUMERIC(10,2) NOT NULL DEFAULT 0,
+  total_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+  payment_method_preference TEXT,
+  biotype_weight TEXT,
+  biotype_height TEXT,
+  sleeping_position TEXT,
+  back_pain TEXT,
+  chat_history JSONB NOT NULL DEFAULT '[]'::jsonb,
+  notes TEXT,
+  converted_order_id TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_flamar_leads_status ON flamar_leads(status);
+CREATE INDEX IF NOT EXISTS idx_flamar_leads_phone ON flamar_leads(phone);
+
+-- 11. TABELA DE POSTS DO BLOG FLAMAR
+CREATE TABLE IF NOT EXISTS flamar_blog_posts (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  content TEXT NOT NULL,
+  category TEXT NOT NULL,
+  author TEXT NOT NULL,
+  read_time_minutes INTEGER NOT NULL DEFAULT 4,
+  image_url TEXT,
+  published BOOLEAN NOT NULL DEFAULT true,
+  published_at TEXT NOT NULL,
+  views_count INTEGER NOT NULL DEFAULT 0
+);
+
+ALTER TABLE flamar_cliques ENABLE ROW LEVEL SECURITY;
+ALTER TABLE flamar_leads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE flamar_blog_posts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Acesso total flamar_cliques" ON flamar_cliques;
+CREATE POLICY "Acesso total flamar_cliques" ON flamar_cliques FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Acesso total flamar_leads" ON flamar_leads;
+CREATE POLICY "Acesso total flamar_leads" ON flamar_leads FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Acesso total flamar_blog_posts" ON flamar_blog_posts;
+CREATE POLICY "Acesso total flamar_blog_posts" ON flamar_blog_posts FOR ALL USING (true) WITH CHECK (true);
