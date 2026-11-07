@@ -7,6 +7,7 @@ import { InventoryView } from './ErpOperationsModules';
 import { CustomersModuleView } from './CustomersModuleView';
 import { AnalyticsModuleView } from './AnalyticsModuleView';
 import { BlogModuleView } from './BlogModuleView';
+import { LeadsCrmModuleView } from './LeadsCrmModuleView';
 import {
   Package,
   ShoppingBag,
@@ -25,6 +26,7 @@ export const ErpLayout: React.FC = () => {
     products,
     customers,
     visits,
+    leads,
   } = useFlamar();
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -35,6 +37,14 @@ export const ErpLayout: React.FC = () => {
       label: 'Estoque & Preços',
       icon: <Package size={16} />,
       badge: String(products.length)
+    },
+    {
+      id: 'leads',
+      label: 'Leads & Comercial (Chat)',
+      icon: <Users size={16} />,
+      badge: leads.filter(l => l.status !== 'convertido_venda' && l.status !== 'perdido').length > 0
+        ? String(leads.filter(l => l.status !== 'convertido_venda' && l.status !== 'perdido').length)
+        : undefined
     },
     {
       id: 'customers',
@@ -146,6 +156,7 @@ export const ErpLayout: React.FC = () => {
           {erpSection === 'customers' && <CustomersModuleView />}
           {erpSection === 'analytics' && <AnalyticsModuleView />}
           {erpSection === 'blog' && <BlogModuleView />}
+          {erpSection === 'leads' && <LeadsCrmModuleView />}
         </main>
       </div>
     </div>

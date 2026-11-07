@@ -14,6 +14,8 @@ import {
   VisitRecord,
   ProductClickRecord,
   BlogPost,
+  LeadRecord,
+  LeadStatus,
   PaymentMethod,
   OrderDeliveryStatus
 } from '../types/database';
@@ -104,6 +106,13 @@ interface FlamarContextType {
   addBlogPost: (post: Omit<BlogPost, 'id' | 'publishedAt'>) => BlogPost;
   updateBlogPost: (post: BlogPost) => void;
   deleteBlogPost: (id: string) => void;
+
+  // CRM / Leads & Orçamentos (Chatbot Comercial)
+  leads: LeadRecord[];
+  addOrUpdateLead: (lead: LeadRecord) => void;
+  updateLeadStatus: (leadId: string, status: LeadStatus, notes?: string) => void;
+  deleteLead: (leadId: string) => void;
+  convertLeadToOrder: (leadId: string) => ErpOrder | null;
 }
 
 const STORAGE_KEYS = {
@@ -118,6 +127,7 @@ const STORAGE_KEYS = {
   VISITS: 'flamar_site_visits_v1',
   PRODUCT_CLICKS: 'flamar_site_product_clicks_v1',
   BLOG_POSTS: 'flamar_blog_posts_v1',
+  LEADS: 'flamar_leads_crm_v1',
   LAST_VISIT_SESSION: 'flamar_last_visit_session_v1'
 };
 
@@ -181,6 +191,10 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadStorage<BlogPost[]>(STORAGE_KEYS.BLOG_POSTS, INITIAL_BLOG_POSTS)
   );
 
+  const [leads, setLeads] = useState<LeadRecord[]>(() =>
+    loadStorage<LeadRecord[]>(STORAGE_KEYS.LEADS, [])
+  );
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
   }, [products]);
@@ -224,6 +238,10 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.BLOG_POSTS, JSON.stringify(blogPosts));
   }, [blogPosts]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify(leads));
+  }, [leads]);
 
   // Sincronização inicial com o Supabase ao carregar
   useEffect(() => {
@@ -344,6 +362,107 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const deleteBlogPost = (id: string) => {
     setBlogPosts(prev => prev.filter(p => p.id !== id));
+  };
+
+  // Gerenciamento de Leads e Orçamentos Comerciais
+  const addOrUpdateLead = (lead: LeadRecord) => {
+    setLeads(prev => {
+      const idx = prev.findIndex(l => l.id === lead.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = lead;
+        return copy;
+      }
+      return [lead, ...prev];
+    });
+  };
+
+  const updateLeadStatus = (leadId: string, status: LeadStatus, notes?: string) => {
+    setLeads(prev => prev.map(l => {
+      if (l.id === leadId) {
+        return {
+          ...l,
+          status,
+          notes: notes !== undefined ? notes : l.notes
+        };
+      }
+      return l;
+    }));
+  };
+
+  const deleteLead = (leadId: string) => {
+    setLeads(prev => prev.filter(l => l.id !== leadId));
+  };
+
+  const convertLeadToOrder = (leadId: string): ErpOrder | null => {
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead || !lead.product_id) return null;
+
+    const prod = products.find(p => p.id === lead.product_id);
+    const unitPrice = lead.unit_price || (prod ? prod.cash_price : 0);
+    const total = lead.total_amount || (unitPrice * (lead.quantity || 1));
+
+    // 1. Cadastra ou atualiza o cliente caso não exista
+    const existingCust = customers.find(c => c.phone.replace(/\D/g, '') === lead.phone.replace(/\D/g, ''));
+    let customerId = existingCust?.id;
+    if (!existingCust && lead.name) {
+      const newCust = addCustomer({
+        full_name: lead.name,
+        phone: lead.phone,
+        cep: lead.cep || '01000-000',
+        address: lead.address || 'São Paulo',
+        neighborhood: lead.neighborhood || 'Centro',
+        city: lead.city || 'São Paulo',
+        state: 'SP',
+        notes: `Criado via Leadster Chatbot (Lead #${lead.id.slice(0, 6)})`
+      });
+      customerId = newCust.id;
+    }
+
+    // 2. Cria o Pedido ERP
+    const costPrice = prod ? prod.cost_price : unitPrice * 0.6;
+    const qty = lead.quantity || 1;
+    const subtotal = unitPrice * qty;
+
+    const newOrder: ErpOrder = {
+      id: `FLM-${Date.now().toString().slice(-6)}`,
+      created_at: new Date().toISOString(),
+      channel: 'Catálogo Online',
+      customer_name: lead.name || 'Cliente Chat',
+      customer_phone: lead.phone,
+      customer_cep: lead.cep || '01000-000',
+      customer_address: lead.address || 'A combinar',
+      customer_neighborhood: lead.neighborhood || 'Centro',
+      customer_city: lead.city || 'São Paulo',
+      seller_name: 'Chatbot Consultor Flamar',
+      items: [
+        {
+          product_id: lead.product_id,
+          sku: lead.sku || prod?.sku || 'FLAMAR',
+          product_name: lead.product_name || prod?.name || 'Colchão Flamar',
+          quantity: qty,
+          unit_price: unitPrice,
+          cost_price: costPrice,
+          subtotal: subtotal
+        }
+      ],
+      subtotal: subtotal,
+      discount: lead.discount || 0,
+      shipping_fee: lead.shipping_fee || 0,
+      total: total,
+      payment_method: 'pix',
+      installments: 1,
+      payment_status: 'pendente',
+      delivery_status: 'aguardando_separacao',
+      notes: `Orçamento comercial gerado pelo chat. Medida: ${lead.dimensions || 'Padrão'}.`
+    };
+
+    setOrders(prev => [newOrder, ...prev]);
+
+    // Atualiza status do lead para convertido
+    updateLeadStatus(leadId, 'convertido_venda', `Convertido no Pedido ERP #${newOrder.id}`);
+
+    return newOrder;
   };
 
   // Efeito inicial para registrar a visita do usuário ao carregar a página
@@ -735,7 +854,12 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         blogPosts,
         addBlogPost,
         updateBlogPost,
-        deleteBlogPost
+        deleteBlogPost,
+        leads,
+        addOrUpdateLead,
+        updateLeadStatus,
+        deleteLead,
+        convertLeadToOrder
       }}
     >
       {children}

@@ -13,6 +13,7 @@ export type ErpSection =
   | 'inventory'
   | 'orders'
   | 'customers'
+  | 'leads'
   | 'analytics'
   | 'blog'
   | 'suppliers'
@@ -163,6 +164,7 @@ export interface ErpOrder {
   scheduled_delivery_date?: string;
   driver_notes?: string;
   seller_name: string;
+  notes?: string;
 }
 
 export interface CustomerRecord {
@@ -220,6 +222,56 @@ export interface BlogPost {
   published: boolean;
   publishedAt: string; // ISO ou YYYY-MM-DD
   viewsCount?: number;
+}
+
+export type LeadStatus =
+  | 'novo'
+  | 'orcamento_gerado'
+  | 'aguardando_confirmacao'
+  | 'convertido_venda'
+  | 'perdido';
+
+export interface LeadMessage {
+  sender: 'bot' | 'user';
+  text: string;
+  time: string;
+}
+
+export interface LeadRecord {
+  id: string;
+  created_at: string;
+  name: string;
+  phone: string;
+  cep?: string;
+  address?: string;
+  neighborhood?: string;
+  city?: string;
+  status: LeadStatus;
+  
+  // Orçamento calculado
+  product_id?: string;
+  product_name?: string;
+  sku?: string;
+  size_label?: string;
+  dimensions?: string;
+  quantity: number;
+  unit_price: number;
+  cash_price: number;
+  discount: number;
+  shipping_fee: number;
+  total_amount: number;
+  payment_method_preference?: string;
+  
+  // Respostas de consultoria do sono
+  biotype_weight?: string;
+  biotype_height?: string;
+  sleeping_position?: string;
+  back_pain?: string;
+  
+  // Histórico de mensagens
+  chat_history: LeadMessage[];
+  notes?: string;
+  converted_order_id?: string;
 }
 
 export interface SupplierRecord {

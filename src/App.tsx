@@ -8,6 +8,7 @@ import {
   CartCheckoutDrawer,
   StoreFooter
 } from './components/store/StoreModalsAndFooter';
+import { LeadsterChatWidget } from './components/store/LeadsterChatWidget';
 import { ErpLayout } from './components/erp/ErpLayout';
 
 const MainApp: React.FC = () => {
@@ -34,6 +35,9 @@ const MainApp: React.FC = () => {
       {/* Modais Globais da Loja */}
       <ProductDetailModal />
       <CartCheckoutDrawer />
+
+      {/* Consultor Virtual Proativo Leadster no Site */}
+      {environment === 'storefront' && <LeadsterChatWidget />}
     </div>
   );
 };
