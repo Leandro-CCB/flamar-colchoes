@@ -26,7 +26,9 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
     addToCart,
     setIsCartDrawerOpen,
     recordProductClick,
-    blogPosts
+    blogPosts,
+    whatsappNumber,
+    whatsappDisplay
   } = useFlamar();
 
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
@@ -198,7 +200,7 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
               </p>
             </div>
             <a
-              href={`https://wa.me/${FLAMAR_COMPANY_INFO.whatsapp_e164}?text=${encodeURIComponent('Olá Flamar Colchões! Gostaria de informações sobre produtos e entrega.')}`}
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá Flamar Colchões! Gostaria de informações sobre produtos e entrega.')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm shrink-0"
@@ -296,7 +298,7 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
                 <p className="text-xs text-gray-600 mt-1">Converse com nossos especialistas com 37 anos de experiência e ganhe consultoria personalizada.</p>
               </div>
               <a
-                href={`https://wa.me/${FLAMAR_COMPANY_INFO.whatsapp_e164}?text=${encodeURIComponent(`Olá! Li o artigo "${selectedPost.title}" no Blog da Flamar e gostaria de ajuda para escolher meu colchão.`)}`}
+                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Li o artigo "${selectedPost.title}" no Blog da Flamar e gostaria de ajuda para escolher meu colchão.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 shrink-0 shadow"

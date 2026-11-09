@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   AppEnvironment,
   ErpSection,
@@ -37,7 +37,10 @@ import {
   carregarLeadsSupabase,
   salvarLeadSupabase,
   carregarBlogPostsSupabase,
-  salvarBlogPostSupabase
+  salvarBlogPostSupabase,
+  carregarConfiguracoesSupabase,
+  salvarConfiguracoesSupabase,
+  FlamarConfiguracoes
 } from '../lib/flamarDbSync';
 
 interface FlamarContextType {
@@ -120,6 +123,11 @@ interface FlamarContextType {
   updateLeadStatus: (leadId: string, status: LeadStatus, notes?: string) => void;
   deleteLead: (leadId: string) => void;
   convertLeadToOrder: (leadId: string) => ErpOrder | null;
+
+  // Configurações Globais (WhatsApp da Loja)
+  whatsappNumber: string;
+  whatsappDisplay: string;
+  setWhatsappNumber: (rawNum: string) => void;
 }
 
 const STORAGE_KEYS = {
@@ -135,6 +143,7 @@ const STORAGE_KEYS = {
   PRODUCT_CLICKS: 'flamar_site_product_clicks_v1',
   BLOG_POSTS: 'flamar_blog_posts_v1',
   LEADS: 'flamar_leads_crm_v1',
+  CONFIG: 'flamar_config_v1',
   LAST_VISIT_SESSION: 'flamar_last_visit_session_v1'
 };
 
@@ -202,6 +211,37 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadStorage<LeadRecord[]>(STORAGE_KEYS.LEADS, [])
   );
 
+  // WhatsApp da Loja (Padrão: 5511942239108 - configurável via ERP / Supabase)
+  const [whatsappNumber, setWhatsappNumberState] = useState<string>(() =>
+    loadStorage<string>(STORAGE_KEYS.CONFIG, '5511942239108')
+  );
+
+  const whatsappDisplay = useMemo(() => {
+    const raw = whatsappNumber.replace(/\D/g, '');
+    if (raw.length === 13 && raw.startsWith('55')) {
+      // 55 11 94223-9108
+      return `(${raw.slice(2, 4)}) ${raw.slice(4, 9)}-${raw.slice(9)}`;
+    }
+    if (raw.length === 11) {
+      return `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
+    }
+    return whatsappNumber;
+  }, [whatsappNumber]);
+
+  const setWhatsappNumber = useCallback((rawNum: string) => {
+    let clean = rawNum.replace(/\D/g, '');
+    if (!clean) return;
+    if (clean.length === 11 && !clean.startsWith('55')) {
+      clean = `55${clean}`;
+    }
+    setWhatsappNumberState(clean);
+    localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(clean));
+    salvarConfiguracoesSupabase({
+      whatsapp_number: clean,
+      whatsapp_display: clean.length === 13 ? `(${clean.slice(2, 4)}) ${clean.slice(4, 9)}-${clean.slice(9)}` : clean
+    });
+  }, []);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
   }, [products]);
@@ -261,7 +301,8 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         visitasSupabase,
         cliquesSupabase,
         leadsSupabase,
-        postsSupabase
+        postsSupabase,
+        cfgSupabase
       ] = await Promise.all([
         carregarProdutosSupabase(),
         carregarClientesSupabase(),
@@ -270,7 +311,8 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         carregarVisitasSupabase(),
         carregarCliquesSupabase(),
         carregarLeadsSupabase(),
-        carregarBlogPostsSupabase()
+        carregarBlogPostsSupabase(),
+        carregarConfiguracoesSupabase()
       ]);
 
       if (prodsSupabase && prodsSupabase.length > 0) {
@@ -296,6 +338,10 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       if (postsSupabase && postsSupabase.length > 0) {
         setBlogPosts(postsSupabase);
+      }
+      if (cfgSupabase && cfgSupabase.whatsapp_number) {
+        setWhatsappNumberState(cfgSupabase.whatsapp_number);
+        localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(cfgSupabase.whatsapp_number));
       }
     }
 
@@ -898,7 +944,10 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addOrUpdateLead,
         updateLeadStatus,
         deleteLead,
-        convertLeadToOrder
+        convertLeadToOrder,
+        whatsappNumber,
+        whatsappDisplay,
+        setWhatsappNumber
       }}
     >
       {children}

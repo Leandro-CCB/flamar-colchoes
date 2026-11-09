@@ -8,6 +8,7 @@ import { CustomersModuleView } from './CustomersModuleView';
 import { AnalyticsModuleView } from './AnalyticsModuleView';
 import { BlogModuleView } from './BlogModuleView';
 import { LeadsCrmModuleView } from './LeadsCrmModuleView';
+import { SettingsModuleView } from './SettingsModuleView';
 import {
   Package,
   ShoppingBag,
@@ -157,6 +158,7 @@ export const ErpLayout: React.FC = () => {
           {erpSection === 'analytics' && <AnalyticsModuleView />}
           {erpSection === 'blog' && <BlogModuleView />}
           {erpSection === 'leads' && <LeadsCrmModuleView />}
+          {erpSection === 'settings' && <SettingsModuleView />}
         </main>
       </div>
     </div>

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 export const ProductDetailModal: React.FC = () => {
-  const { selectedProductModal, setSelectedProductModal, addToCart, setIsCartDrawerOpen, recordProductClick } = useFlamar();
+  const { selectedProductModal, setSelectedProductModal, addToCart, setIsCartDrawerOpen, recordProductClick, whatsappNumber } = useFlamar();
   const [activeImgIdx, setActiveImgIdx] = useState(0);
 
   if (!selectedProductModal) return null;
@@ -127,7 +127,7 @@ export const ProductDetailModal: React.FC = () => {
                 </button>
 
                 <a
-                  href={`https://wa.me/${FLAMAR_COMPANY_INFO.whatsapp_e164}?text=${encodeURIComponent(`Olá Flamar Colchões! Tenho interesse no produto: ${selectedProductModal.name} (SKU ${selectedProductModal.sku}) por R$ ${selectedProductModal.cash_price.toFixed(2)} à vista.`)}`}
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá Flamar Colchões! Tenho interesse no produto: ${selectedProductModal.name} (SKU ${selectedProductModal.sku}) por R$ ${selectedProductModal.cash_price.toFixed(2)} à vista.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => recordProductClick(selectedProductModal, 'click_whatsapp')}
@@ -153,7 +153,8 @@ export const CartCheckoutDrawer: React.FC = () => {
     updateCartQty,
     removeFromCart,
     clearCart,
-    createOrder
+    createOrder,
+    whatsappNumber
   } = useFlamar();
 
   const [customerName, setCustomerName] = useState('');
@@ -241,7 +242,7 @@ export const CartCheckoutDrawer: React.FC = () => {
                 Seu pedido já deu entrada automática no ERP da Flamar Colchões (estoque reservado e financeiro registrado).
               </p>
               <a
-                href={`https://wa.me/${FLAMAR_COMPANY_INFO.whatsapp_e164}?text=${encodeURIComponent(`Olá Flamar Colchões! Acabei de registrar o pedido ${orderSuccessId} em nome de ${customerName}.`)}`}
+                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá Flamar Colchões! Acabei de registrar o pedido ${orderSuccessId} em nome de ${customerName}.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase flex items-center justify-center gap-2"

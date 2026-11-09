@@ -405,3 +405,44 @@ export async function salvarBlogPostSupabase(post: BlogPost): Promise<void> {
     console.error('[Flamar Supabase] Erro ao salvar post blog:', err);
   }
 }
+
+// 10. CONFIGURAÇÕES GERAIS (WhatsApp, Contato, Empresa no Supabase)
+export interface FlamarConfiguracoes {
+  whatsapp_number: string; // ex: 5511942239108
+  whatsapp_display: string; // ex: (11) 94223-9108
+}
+
+export async function carregarConfiguracoesSupabase(): Promise<FlamarConfiguracoes | null> {
+  try {
+    const { data, error } = await supabase
+      .from('flamar_configuracoes')
+      .select('chave, valor');
+
+    if (error || !data || data.length === 0) return null;
+    const configMap: Record<string, string> = {};
+    data.forEach((row: any) => {
+      configMap[row.chave] = row.valor;
+    });
+
+    if (configMap['whatsapp_number']) {
+      return {
+        whatsapp_number: configMap['whatsapp_number'],
+        whatsapp_display: configMap['whatsapp_display'] || configMap['whatsapp_number']
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function salvarConfiguracoesSupabase(cfg: FlamarConfiguracoes): Promise<void> {
+  try {
+    await supabase.from('flamar_configuracoes').upsert([
+      { chave: 'whatsapp_number', valor: cfg.whatsapp_number, atualizado_em: new Date().toISOString() },
+      { chave: 'whatsapp_display', valor: cfg.whatsapp_display, atualizado_em: new Date().toISOString() }
+    ], { onConflict: 'chave' });
+  } catch (err) {
+    console.error('[Flamar Supabase] Erro ao salvar configuracoes:', err);
+  }
+}

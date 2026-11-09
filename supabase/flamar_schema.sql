@@ -315,9 +315,24 @@ CREATE TABLE IF NOT EXISTS flamar_blog_posts (
   views_count INTEGER NOT NULL DEFAULT 0
 );
 
+-- 12. TABELA DE CONFIGURAÇÕES GERAIS (WhatsApp Comercial, etc.)
+CREATE TABLE IF NOT EXISTS flamar_configuracoes (
+  chave TEXT PRIMARY KEY,
+  valor TEXT NOT NULL,
+  atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Inserir o WhatsApp padrão se não existir
+INSERT INTO flamar_configuracoes (chave, valor)
+VALUES 
+  ('whatsapp_number', '5511942239108'),
+  ('whatsapp_display', '(11) 94223-9108')
+ON CONFLICT (chave) DO NOTHING;
+
 ALTER TABLE flamar_cliques ENABLE ROW LEVEL SECURITY;
 ALTER TABLE flamar_leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE flamar_blog_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE flamar_configuracoes ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Acesso total flamar_cliques" ON flamar_cliques;
 CREATE POLICY "Acesso total flamar_cliques" ON flamar_cliques FOR ALL USING (true) WITH CHECK (true);
@@ -327,3 +342,6 @@ CREATE POLICY "Acesso total flamar_leads" ON flamar_leads FOR ALL USING (true) W
 
 DROP POLICY IF EXISTS "Acesso total flamar_blog_posts" ON flamar_blog_posts;
 CREATE POLICY "Acesso total flamar_blog_posts" ON flamar_blog_posts FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Acesso total flamar_configuracoes" ON flamar_configuracoes;
+CREATE POLICY "Acesso total flamar_configuracoes" ON flamar_configuracoes FOR ALL USING (true) WITH CHECK (true);

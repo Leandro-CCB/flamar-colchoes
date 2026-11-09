@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useFlamar } from '../../context/FlamarContext';
 import { LeadRecord, LeadStatus } from '../../types/database';
-import { FLAMAR_COMPANY_INFO } from '../../lib/flamarCatalog';
 import {
   Users,
   Search,
@@ -24,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export const LeadsCrmModuleView: React.FC = () => {
-  const { leads, updateLeadStatus, deleteLead, convertLeadToOrder, orders } = useFlamar();
+  const { leads, updateLeadStatus, deleteLead, convertLeadToOrder, orders, whatsappDisplay, setErpSection } = useFlamar();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
@@ -110,6 +109,15 @@ export const LeadsCrmModuleView: React.FC = () => {
             Todos os clientes atendidos pelo chat do site com produto de interesse, orçamento detalhado e dados cadastrais.
           </p>
         </div>
+
+        <button
+          onClick={() => setErpSection('settings')}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-all shrink-0 self-start sm:self-auto"
+          title="Clique para alterar o número do WhatsApp de destino"
+        >
+          <PhoneCall size={14} className="text-emerald-600" />
+          <span>WhatsApp Destino: <strong className="font-mono text-emerald-900">{whatsappDisplay}</strong></span>
+        </button>
       </div>
 
       {/* ── CARDS DE MÉTRICAS DO FUNIL ── */}

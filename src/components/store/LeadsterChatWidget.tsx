@@ -34,7 +34,7 @@ type StepType =
   | 'done';
 
 export const LeadsterChatWidget: React.FC = () => {
-  const { products, addOrUpdateLead, recordProductClick } = useFlamar();
+  const { products, addOrUpdateLead, recordProductClick, whatsappNumber } = useFlamar();
 
   const [isOpen, setIsOpen] = useState(false);
   const [hasOpenedBefore, setHasOpenedBefore] = useState(false);
@@ -356,7 +356,7 @@ export const LeadsterChatWidget: React.FC = () => {
     }
   };
 
-  const whatsappUrl = `https://wa.me/${FLAMAR_COMPANY_INFO.whatsapp_e164}?text=${encodeURIComponent(
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
     `Olá Flamar Colchões! Fiz uma consultoria no chat do site.\n\n` +
     `*Nome:* ${customerName || 'Cliente'}\n` +
     `*Produto:* ${selectedProduct?.name || 'Colchão'}\n` +
