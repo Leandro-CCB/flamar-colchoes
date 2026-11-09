@@ -196,7 +196,7 @@ export const StoreHome: React.FC<StoreHomeProps> = ({
                 Rua Jotacá, 378 — Vila Picinin (Pirituba), São Paulo - SP
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                CEP: 02930-050 • Fone: (11) 3975-4947 • E-mail: {FLAMAR_COMPANY_INFO.email}
+                CEP: 02930-050 • Fone: {whatsappDisplay} • E-mail: {FLAMAR_COMPANY_INFO.email}
               </p>
             </div>
             <a

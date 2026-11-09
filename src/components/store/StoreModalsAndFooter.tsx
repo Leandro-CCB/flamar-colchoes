@@ -463,6 +463,45 @@ export const StoreFooter: React.FC = () => {
             <span className="px-2.5 py-1 rounded bg-white/10 text-[#FBF1D6] font-bold">PRÓ-ESPUMA</span>
             <span className="px-2.5 py-1 rounded bg-white/10 text-[#FBF1D6] font-bold">ABICOL</span>
           </div>
+
+          {/* Selo Site Seguro SSL Certificado Oficial */}
+          <div className="pt-2">
+            <div className="inline-flex flex-col items-center justify-center bg-white text-gray-900 rounded-xl px-4 py-2.5 shadow-md border border-gray-200/80 select-none">
+              <div className="flex items-center gap-2 mb-1.5">
+                {/* Ícone de Cadeado Vetorial Fiel */}
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {/* Arco metálico superior */}
+                  <path
+                    d="M7 10V7C7 4.23858 9.23858 2 12 2C14.7614 2 17 4.23858 17 7V10"
+                    stroke="#5B8EA3"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  {/* Corpo dourado esquerdo (luz) */}
+                  <path
+                    d="M5 10C3.89543 10 3 10.8954 3 12V20C3 21.1046 3.89543 22 5 22H12V10H5Z"
+                    fill="#F2B807"
+                  />
+                  {/* Corpo dourado direito (sombra) */}
+                  <path
+                    d="M12 10H19C20.1046 10 21 10.8954 21 12V20C21 21.1046 20.1046 22 19 22H12V10Z"
+                    fill="#E5A912"
+                  />
+                  {/* Fechadura */}
+                  <circle cx="12" cy="15" r="1.5" fill="#1C110E" />
+                  <path d="M11 15L10.5 18H13.5L13 15H11Z" fill="#1C110E" />
+                </svg>
+                <span className="font-extrabold text-[12px] tracking-wider text-black font-sans uppercase">
+                  SITE SEGURO
+                </span>
+              </div>
+              {/* Faixa Pílula Verde SSL Certificado */}
+              <div className="bg-[#85C427] text-white px-3.5 py-0.5 rounded-full font-sans text-[10px] tracking-wide font-medium flex items-center justify-center gap-1 shadow-sm">
+                <span className="font-bold">SSL</span>
+                <span>CERTIFICADO</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
