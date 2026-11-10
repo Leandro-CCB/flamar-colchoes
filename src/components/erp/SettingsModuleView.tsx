@@ -9,11 +9,13 @@ import {
   ShieldCheck,
   Save,
   Info,
-  ExternalLink
+  ExternalLink,
+  Users,
+  ChevronRight
 } from 'lucide-react';
 
 export const SettingsModuleView: React.FC = () => {
-  const { whatsappNumber, whatsappDisplay, setWhatsappNumber } = useFlamar();
+  const { whatsappNumber, whatsappDisplay, setWhatsappNumber, setErpSection, users } = useFlamar();
 
   const [inputNumber, setInputNumber] = useState(whatsappNumber);
   const [salvoSucesso, setSalvoSucesso] = useState(false);
@@ -46,6 +48,36 @@ export const SettingsModuleView: React.FC = () => {
             Gerencie os canais de contato, canais de atendimento e direcionamento do WhatsApp.
           </p>
         </div>
+      </div>
+
+      {/* Card Acesso Rápido a Usuários */}
+      <div className="bg-gradient-to-r from-[#1C110E] to-[#2B1813] rounded-2xl p-6 text-white border border-[#D4AF37]/50 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-[#D4AF37]/20 text-[#D4AF37] rounded-xl shrink-0">
+            <Users className="w-6 h-6 text-[#D4AF37]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-white">
+                Cadastro de Usuários & Níveis de Acesso
+              </h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#D4AF37] text-[#1C110E] font-black">
+                {users.length} Cadastrado(s)
+              </span>
+            </div>
+            <p className="text-xs text-gray-300 mt-1">
+              Defina quem pode acessar cada aba do ERP (Níveis Master e Administrador com login e senha).
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setErpSection('users')}
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#82260E] to-[#B83918] hover:from-[#9B2E11] hover:to-[#DF6442] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 border border-[#D4AF37]/50 shadow transition-all cursor-pointer shrink-0"
+        >
+          <span>Gerenciar Usuários</span>
+          <ChevronRight size={15} className="text-[#D4AF37]" />
+        </button>
       </div>
 
       {/* Card Configuração WhatsApp */}
@@ -155,8 +187,8 @@ export const SettingsModuleView: React.FC = () => {
 
           <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
             <span className="text-[11px] font-semibold text-gray-400 uppercase">Loja Física Matriz</span>
-            <div className="text-sm font-bold text-gray-800 mt-0.5">Pirituba / Freguesia do Ó</div>
-            <div className="text-xs text-gray-500">Av. Paula Ferreira, 1563 - SP</div>
+            <div className="text-sm font-bold text-gray-800 mt-0.5">Pirituba - SP</div>
+            <div className="text-xs text-gray-500">Rua Jotacá, 378 • CEP 02930-050</div>
           </div>
 
           <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">

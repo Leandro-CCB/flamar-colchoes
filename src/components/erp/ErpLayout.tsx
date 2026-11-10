@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFlamar } from '../../context/FlamarContext';
 import { FlamarLogo } from '../common/FlamarLogo';
 import { FLAMAR_COMPANY_INFO } from '../../lib/flamarCatalog';
@@ -9,6 +9,7 @@ import { AnalyticsModuleView } from './AnalyticsModuleView';
 import { BlogModuleView } from './BlogModuleView';
 import { LeadsCrmModuleView } from './LeadsCrmModuleView';
 import { SettingsModuleView } from './SettingsModuleView';
+import { UsersModuleView } from './UsersModuleView';
 import {
   Package,
   ShoppingBag,
@@ -16,7 +17,11 @@ import {
   Eye,
   BookOpen,
   Menu,
-  X
+  X,
+  Settings,
+  ShieldCheck,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 
 export const ErpLayout: React.FC = () => {
@@ -28,11 +33,19 @@ export const ErpLayout: React.FC = () => {
     customers,
     visits,
     leads,
+    currentUser,
+    users,
+    logoutUser
   } = useFlamar();
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const navItems: { id: ErpSection; label: string; icon: React.ReactNode; badge?: string }[] = [
+  const isMaster = currentUser?.role === 'master';
+  const allowedSections = isMaster
+    ? ['inventory', 'leads', 'customers', 'analytics', 'blog', 'settings', 'users']
+    : (currentUser?.allowed_sections || ['inventory']);
+
+  const allNavItems: { id: ErpSection; label: string; icon: React.ReactNode; badge?: string }[] = [
     {
       id: 'inventory',
       label: 'Estoque & Preços',
@@ -65,7 +78,28 @@ export const ErpLayout: React.FC = () => {
       icon: <BookOpen size={16} />,
       badge: '3'
     },
+    {
+      id: 'settings',
+      label: 'Configurações Loja',
+      icon: <Settings size={16} />
+    },
+    {
+      id: 'users',
+      label: 'Usuários & Permissões',
+      icon: <ShieldCheck size={16} />,
+      badge: String(users.length)
+    }
   ];
+
+  // Filtra as abas conforme as permissões do usuário logado
+  const navItems = allNavItems.filter((item) => allowedSections.includes(item.id));
+
+  // Se a aba ativa não estiver permitida para este usuário, redireciona para a primeira disponível
+  useEffect(() => {
+    if (!allowedSections.includes(erpSection)) {
+      setErpSection((allowedSections[0] as ErpSection) || 'inventory');
+    }
+  }, [erpSection, allowedSections, setErpSection]);
 
   return (
     <div className="flex-1 flex min-h-[calc(100vh-45px)] bg-[#F5F1ED]">
@@ -125,9 +159,34 @@ export const ErpLayout: React.FC = () => {
 
         {/* Rodapé da Sidebar */}
         <div className="p-3.5 border-t border-white/10 bg-[#140B09] space-y-2">
+          {currentUser && (
+            <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <div className="w-6 h-6 rounded-full bg-[#D4AF37] text-[#1C110E] flex items-center justify-center font-black text-[10px] shrink-0">
+                  {currentUser.role === 'master' ? '👑' : '👤'}
+                </div>
+                <div className="truncate text-left">
+                  <div className="text-[11px] font-bold text-white truncate">
+                    {currentUser.name}
+                  </div>
+                  <div className="text-[9px] text-[#D4AF37] uppercase tracking-wider font-extrabold">
+                    {currentUser.role === 'master' ? 'Master' : 'Administrador'}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={logoutUser}
+                title="Sair do Administrador"
+                className="p-1 rounded-lg text-gray-400 hover:text-red-400 hover:bg-white/10 transition-colors"
+              >
+                <LogOut size={13} />
+              </button>
+            </div>
+          )}
+
           <button
             onClick={() => setEnvironment('storefront')}
-            className="w-full py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-[#FBF1D6] text-xs font-bold flex items-center justify-center gap-2 transition-colors"
+            className="w-full py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-[#FBF1D6] text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <ShoppingBag size={14} className="text-[#D4AF37]" />
             <span>Ver Loja Virtual</span>
@@ -159,6 +218,7 @@ export const ErpLayout: React.FC = () => {
           {erpSection === 'blog' && <BlogModuleView />}
           {erpSection === 'leads' && <LeadsCrmModuleView />}
           {erpSection === 'settings' && <SettingsModuleView />}
+          {erpSection === 'users' && <UsersModuleView />}
         </main>
       </div>
     </div>

@@ -410,6 +410,7 @@ export async function salvarBlogPostSupabase(post: BlogPost): Promise<void> {
 export interface FlamarConfiguracoes {
   whatsapp_number: string; // ex: 5511942239108
   whatsapp_display: string; // ex: (11) 94223-9108
+  usuarios_json?: string; // JSON serializado de UserAccount[]
 }
 
 export async function carregarConfiguracoesSupabase(): Promise<FlamarConfiguracoes | null> {
@@ -424,10 +425,11 @@ export async function carregarConfiguracoesSupabase(): Promise<FlamarConfiguraco
       configMap[row.chave] = row.valor;
     });
 
-    if (configMap['whatsapp_number']) {
+    if (configMap['whatsapp_number'] || configMap['usuarios_json']) {
       return {
-        whatsapp_number: configMap['whatsapp_number'],
-        whatsapp_display: configMap['whatsapp_display'] || configMap['whatsapp_number']
+        whatsapp_number: configMap['whatsapp_number'] || '5511942239108',
+        whatsapp_display: configMap['whatsapp_display'] || '(11) 94223-9108',
+        usuarios_json: configMap['usuarios_json']
       };
     }
     return null;
@@ -438,10 +440,14 @@ export async function carregarConfiguracoesSupabase(): Promise<FlamarConfiguraco
 
 export async function salvarConfiguracoesSupabase(cfg: FlamarConfiguracoes): Promise<void> {
   try {
-    await supabase.from('flamar_configuracoes').upsert([
+    const rows = [
       { chave: 'whatsapp_number', valor: cfg.whatsapp_number, atualizado_em: new Date().toISOString() },
       { chave: 'whatsapp_display', valor: cfg.whatsapp_display, atualizado_em: new Date().toISOString() }
-    ], { onConflict: 'chave' });
+    ];
+    if (cfg.usuarios_json !== undefined) {
+      rows.push({ chave: 'usuarios_json', valor: cfg.usuarios_json, atualizado_em: new Date().toISOString() });
+    }
+    await supabase.from('flamar_configuracoes').upsert(rows, { onConflict: 'chave' });
   } catch (err) {
     console.error('[Flamar Supabase] Erro ao salvar configuracoes:', err);
   }

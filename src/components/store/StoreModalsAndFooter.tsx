@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useFlamar } from '../../context/FlamarContext';
 import { FLAMAR_COMPANY_INFO } from '../../lib/flamarCatalog';
 import { FlamarLogo } from '../common/FlamarLogo';
-import { PaymentMethod } from '../../types/database';
+import { AdminLoginModal } from '../common/AdminLoginModal';
+import { PaymentMethod, ErpSection } from '../../types/database';
 import {
   X, ShoppingCart, MessageCircle, ShieldCheck, CheckCircle2,
   Trash2, Plus, Minus, MapPin, Phone, Mail, Building2, Award
@@ -404,9 +405,25 @@ export const CartCheckoutDrawer: React.FC = () => {
 };
 
 export const StoreFooter: React.FC = () => {
-  const { setEnvironment, setErpSection, visits } = useFlamar();
+  const { setEnvironment, setErpSection, visits, currentUser } = useFlamar();
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   const handleOpenAdminErp = () => {
+    // Se já estiver logado (ex: sessão persistida), entra direto
+    if (currentUser) {
+      setEnvironment('erp');
+      const allowed = currentUser.role === 'master'
+        ? (['inventory', 'leads', 'customers', 'analytics', 'blog', 'settings', 'users'] as ErpSection[])
+        : (currentUser.allowed_sections || ['inventory']);
+      setErpSection((allowed[0] as ErpSection) || 'inventory');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setLoginModalOpen(true);
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    setLoginModalOpen(false);
     setEnvironment('erp');
     setErpSection('inventory');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -530,6 +547,13 @@ export const StoreFooter: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Login na Área do Administrador */}
+      <AdminLoginModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        onSuccess={handleLoginSuccess}
+      />
     </footer>
   );
 };

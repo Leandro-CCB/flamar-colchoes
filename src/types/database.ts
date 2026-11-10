@@ -18,7 +18,21 @@ export type ErpSection =
   | 'blog'
   | 'suppliers'
   | 'dre'
-  | 'settings';
+  | 'settings'
+  | 'users';
+
+export type UserRole = 'master' | 'administrador';
+
+export interface UserAccount {
+  id: string;
+  name: string;
+  username: string;
+  password?: string;
+  role: UserRole;
+  allowed_sections: ErpSection[];
+  is_active: boolean;
+  created_at: string;
+}
 
 export type ProductCategory = string;
 

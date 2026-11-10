@@ -17,7 +17,9 @@ import {
   LeadRecord,
   LeadStatus,
   PaymentMethod,
-  OrderDeliveryStatus
+  OrderDeliveryStatus,
+  UserAccount,
+  UserRole
 } from '../types/database';
 import { FLAMAR_AUTHENTIC_PRODUCTS, FLAMAR_AUTHENTIC_SUPPLIERS } from '../lib/flamarCatalog';
 import { INITIAL_BLOG_POSTS } from '../lib/flamarBlogData';
@@ -128,6 +130,15 @@ interface FlamarContextType {
   whatsappNumber: string;
   whatsappDisplay: string;
   setWhatsappNumber: (rawNum: string) => void;
+
+  // Gestão de Usuários & Níveis de Acesso
+  currentUser: UserAccount | null;
+  users: UserAccount[];
+  loginUser: (username: string, pass: string) => { success: boolean; error?: string };
+  logoutUser: () => void;
+  addUser: (user: Omit<UserAccount, 'id' | 'created_at'>) => UserAccount;
+  updateUser: (user: UserAccount) => void;
+  deleteUser: (id: string) => void;
 }
 
 const STORAGE_KEYS = {
@@ -144,8 +155,43 @@ const STORAGE_KEYS = {
   BLOG_POSTS: 'flamar_blog_posts_v1',
   LEADS: 'flamar_leads_crm_v1',
   CONFIG: 'flamar_config_v1',
-  LAST_VISIT_SESSION: 'flamar_last_visit_session_v1'
+  LAST_VISIT_SESSION: 'flamar_last_visit_session_v1',
+  USERS: 'flamar_users_v1',
+  CURRENT_USER: 'flamar_current_user_v1'
 };
+
+export const ALL_ERP_SECTIONS: { id: ErpSection; label: string; desc: string }[] = [
+  { id: 'inventory', label: 'Estoque & Preços', desc: 'Controle de colchões, medidas, preços e fotos' },
+  { id: 'leads', label: 'Leads & Comercial (Chat)', desc: 'Consultoria de sono e orçamentos do Chatbot' },
+  { id: 'customers', label: 'Clientes & Compras', desc: 'Histórico genuíno de clientes e pedidos' },
+  { id: 'analytics', label: 'Visitas & Métricas', desc: 'Tráfego do site, interesse em produtos e conversão' },
+  { id: 'blog', label: 'Blog do Sono', desc: 'Artigos educativos e dicas de postura e saúde' },
+  { id: 'settings', label: 'Configurações Loja', desc: 'Número WhatsApp e dados de contato' },
+  { id: 'users', label: 'Cadastro de Usuários', desc: 'Gestão de logins, senhas e permissões de abas' }
+];
+
+export const INITIAL_DEFAULT_USERS: UserAccount[] = [
+  {
+    id: 'user_master_default',
+    name: 'Administrador Master',
+    username: 'master',
+    password: '123',
+    role: 'master',
+    allowed_sections: ['inventory', 'leads', 'customers', 'analytics', 'blog', 'settings', 'users'],
+    is_active: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'user_admin_default',
+    name: 'Operador Admin',
+    username: 'admin',
+    password: '123',
+    role: 'administrador',
+    allowed_sections: ['inventory', 'leads', 'customers', 'analytics', 'blog'],
+    is_active: true,
+    created_at: new Date().toISOString()
+  }
+];
 
 const FlamarContext = createContext<FlamarContextType | undefined>(undefined);
 
@@ -240,6 +286,80 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       whatsapp_number: clean,
       whatsapp_display: clean.length === 13 ? `(${clean.slice(2, 4)}) ${clean.slice(4, 9)}-${clean.slice(9)}` : clean
     });
+  }, []);
+
+  // ── Gestão de Usuários e Autenticação ERP ──
+  const [users, setUsers] = useState<UserAccount[]>(() => {
+    const saved = loadStorage<UserAccount[]>(STORAGE_KEYS.USERS, []);
+    return saved.length > 0 ? saved : INITIAL_DEFAULT_USERS;
+  });
+
+  // Salva automaticamente a lista de usuários no LocalStorage e no Supabase (configurações)
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+    salvarConfiguracoesSupabase({
+      whatsapp_number: whatsappNumber,
+      whatsapp_display: whatsappDisplay,
+      usuarios_json: JSON.stringify(users)
+    });
+  }, [users, whatsappNumber, whatsappDisplay]);
+
+  // Sessão atual do usuário logado
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
+    const saved = loadStorage<UserAccount | null>(STORAGE_KEYS.CURRENT_USER, null);
+    if (saved) return saved;
+    // Sessão inicial padrão: Master autenticado para livre navegação e configuração
+    return INITIAL_DEFAULT_USERS[0];
+  });
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+    }
+  }, [currentUser]);
+
+  const loginUser = useCallback((usernameInput: string, passwordInput: string): { success: boolean; error?: string } => {
+    const u = users.find(
+      (user) => user.username.trim().toLowerCase() === usernameInput.trim().toLowerCase()
+    );
+    if (!u) {
+      return { success: false, error: 'Usuário não encontrado.' };
+    }
+    if (!u.is_active) {
+      return { success: false, error: 'Usuário desativado. Contate o administrador master.' };
+    }
+    if (u.password && u.password !== passwordInput) {
+      return { success: false, error: 'Senha incorreta.' };
+    }
+    setCurrentUser(u);
+    return { success: true };
+  }, [users]);
+
+  const logoutUser = useCallback(() => {
+    setCurrentUser(null);
+    setEnvironment('storefront');
+  }, [setEnvironment]);
+
+  const addUser = useCallback((userData: Omit<UserAccount, 'id' | 'created_at'>): UserAccount => {
+    const newUser: UserAccount = {
+      ...userData,
+      id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      created_at: new Date().toISOString()
+    };
+    setUsers((prev) => [...prev, newUser]);
+    return newUser;
+  }, []);
+
+  const updateUser = useCallback((updatedUser: UserAccount) => {
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    setCurrentUser((prev) => (prev && prev.id === updatedUser.id ? updatedUser : prev));
+  }, []);
+
+  const deleteUser = useCallback((id: string) => {
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    setCurrentUser((prev) => (prev && prev.id === id ? null : prev));
   }, []);
 
   useEffect(() => {
@@ -342,6 +462,15 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (cfgSupabase && cfgSupabase.whatsapp_number) {
         setWhatsappNumberState(cfgSupabase.whatsapp_number);
         localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(cfgSupabase.whatsapp_number));
+      }
+      if (cfgSupabase && cfgSupabase.usuarios_json) {
+        try {
+          const parsedUsers = JSON.parse(cfgSupabase.usuarios_json);
+          if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
+            setUsers(parsedUsers);
+            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(parsedUsers));
+          }
+        } catch (_) {}
       }
     }
 
@@ -947,7 +1076,14 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         convertLeadToOrder,
         whatsappNumber,
         whatsappDisplay,
-        setWhatsappNumber
+        setWhatsappNumber,
+        currentUser,
+        users,
+        loginUser,
+        logoutUser,
+        addUser,
+        updateUser,
+        deleteUser
       }}
     >
       {children}
