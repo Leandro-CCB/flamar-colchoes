@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { supabase } from '../lib/supabase';
 import {
   AppEnvironment,
   ErpSection,
@@ -134,7 +135,7 @@ interface FlamarContextType {
   // Gestão de Usuários & Níveis de Acesso
   currentUser: UserAccount | null;
   users: UserAccount[];
-  loginUser: (username: string, pass: string) => { success: boolean; error?: string };
+  loginUser: (username: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   logoutUser: () => void;
   addUser: (user: Omit<UserAccount, 'id' | 'created_at'>) => UserAccount;
   updateUser: (user: UserAccount) => void;
@@ -284,11 +285,70 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
 
-  const loginUser = useCallback((_usernameInput: string, _passwordInput: string): { success: boolean; error?: string } => {
-    return { success: false, error: 'Autenticação segura ainda não está configurada. O acesso ao ERP será liberado após integrar Supabase Auth.' };
+  const loadFlamarUserProfile = useCallback(async (userId: string, fallbackEmail?: string): Promise<UserAccount | null> => {
+    const { data, error } = await supabase
+      .from('flamar_usuarios')
+      .select('user_id, email, nome, role, allowed_sections, is_active, created_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error || !data || data.is_active === false) {
+      return null;
+    }
+
+    return {
+      id: data.user_id,
+      name: data.nome || fallbackEmail || 'Administrador',
+      username: data.email || fallbackEmail || userId,
+      password: '',
+      role: data.role === 'master' ? 'master' : 'administrador',
+      allowed_sections: Array.isArray(data.allowed_sections) ? data.allowed_sections : ['inventory'],
+      is_active: true,
+      created_at: data.created_at || new Date().toISOString()
+    };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted || !session?.user) return;
+      const profile = await loadFlamarUserProfile(session.user.id, session.user.email);
+      if (mounted && profile) {
+        setCurrentUser(profile);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [loadFlamarUserProfile]);
+
+  const loginUser = useCallback(async (usernameInput: string, passwordInput: string): Promise<{ success: boolean; error?: string }> => {
+    const email = usernameInput.trim().toLowerCase();
+    if (!email || !passwordInput) {
+      return { success: false, error: 'Informe e-mail e senha para entrar.' };
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: passwordInput
+    });
+
+    if (error || !data.user) {
+      return { success: false, error: 'E-mail ou senha inválidos.' };
+    }
+
+    const profile = await loadFlamarUserProfile(data.user.id, data.user.email);
+    if (!profile) {
+      await supabase.auth.signOut();
+      return { success: false, error: 'Usuário autenticado, mas sem permissão ativa na tabela flamar_usuarios.' };
+    }
+
+    setCurrentUser(profile);
+    return { success: true };
+  }, [loadFlamarUserProfile]);
+
   const logoutUser = useCallback(() => {
+    void supabase.auth.signOut();
     setCurrentUser(null);
     setEnvironment('storefront');
   }, [setEnvironment]);

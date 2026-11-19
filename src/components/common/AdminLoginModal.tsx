@@ -34,12 +34,12 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  function handleLoginSubmit(e: React.FormEvent) {
+  async function handleLoginSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMessage('');
     setLoading(true);
 
-    const res = loginUser(username, password);
+    const res = await loginUser(username, password);
     setLoading(false);
 
     if (res.success) {
