@@ -170,28 +170,7 @@ export const ALL_ERP_SECTIONS: { id: ErpSection; label: string; desc: string }[]
   { id: 'users', label: 'Cadastro de Usuários', desc: 'Gestão de logins, senhas e permissões de abas' }
 ];
 
-export const INITIAL_DEFAULT_USERS: UserAccount[] = [
-  {
-    id: 'user_master_default',
-    name: 'Administrador Master',
-    username: 'master',
-    password: '123',
-    role: 'master',
-    allowed_sections: ['inventory', 'leads', 'customers', 'analytics', 'blog', 'settings', 'users'],
-    is_active: true,
-    created_at: new Date().toISOString()
-  },
-  {
-    id: 'user_admin_default',
-    name: 'Operador Admin',
-    username: 'admin',
-    password: '123',
-    role: 'administrador',
-    allowed_sections: ['inventory', 'leads', 'customers', 'analytics', 'blog'],
-    is_active: true,
-    created_at: new Date().toISOString()
-  }
-];
+export const INITIAL_DEFAULT_USERS: UserAccount[] = [];
 
 const FlamarContext = createContext<FlamarContextType | undefined>(undefined);
 
@@ -289,53 +268,25 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   // ── Gestão de Usuários e Autenticação ERP ──
-  const [users, setUsers] = useState<UserAccount[]>(() => {
-    const saved = loadStorage<UserAccount[]>(STORAGE_KEYS.USERS, []);
-    return saved.length > 0 ? saved : INITIAL_DEFAULT_USERS;
-  });
+  const [users, setUsers] = useState<UserAccount[]>(() =>
+    loadStorage<UserAccount[]>(STORAGE_KEYS.USERS, INITIAL_DEFAULT_USERS)
+  );
 
-  // Salva automaticamente a lista de usuários no LocalStorage e no Supabase (configurações)
+  // Não sincroniza senhas nem usuários pelo cliente/anônima; requer Supabase Auth/backend.
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-    salvarConfiguracoesSupabase({
-      whatsapp_number: whatsappNumber,
-      whatsapp_display: whatsappDisplay,
-      usuarios_json: JSON.stringify(users)
-    });
-  }, [users, whatsappNumber, whatsappDisplay]);
-
-  // Sessão atual do usuário logado
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
-    const saved = loadStorage<UserAccount | null>(STORAGE_KEYS.CURRENT_USER, null);
-    if (saved) return saved;
-    // Sessão inicial padrão: Master autenticado para livre navegação e configuração
-    return INITIAL_DEFAULT_USERS[0];
-  });
-
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
-    }
-  }, [currentUser]);
-
-  const loginUser = useCallback((usernameInput: string, passwordInput: string): { success: boolean; error?: string } => {
-    const u = users.find(
-      (user) => user.username.trim().toLowerCase() === usernameInput.trim().toLowerCase()
-    );
-    if (!u) {
-      return { success: false, error: 'Usuário não encontrado.' };
-    }
-    if (!u.is_active) {
-      return { success: false, error: 'Usuário desativado. Contate o administrador master.' };
-    }
-    if (u.password && u.password !== passwordInput) {
-      return { success: false, error: 'Senha incorreta.' };
-    }
-    setCurrentUser(u);
-    return { success: true };
   }, [users]);
+
+  // Exige login após recarregar e invalida sessão legada implícita.
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  useEffect(() => {
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+  }, []);
+
+
+  const loginUser = useCallback((_usernameInput: string, _passwordInput: string): { success: boolean; error?: string } => {
+    return { success: false, error: 'Autenticação segura ainda não está configurada. O acesso ao ERP será liberado após integrar Supabase Auth.' };
+  }, []);
 
   const logoutUser = useCallback(() => {
     setCurrentUser(null);
@@ -462,15 +413,6 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (cfgSupabase && cfgSupabase.whatsapp_number) {
         setWhatsappNumberState(cfgSupabase.whatsapp_number);
         localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(cfgSupabase.whatsapp_number));
-      }
-      if (cfgSupabase && cfgSupabase.usuarios_json) {
-        try {
-          const parsedUsers = JSON.parse(cfgSupabase.usuarios_json);
-          if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
-            setUsers(parsedUsers);
-            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(parsedUsers));
-          }
-        } catch (_) {}
       }
     }
 

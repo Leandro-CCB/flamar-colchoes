@@ -410,7 +410,6 @@ export async function salvarBlogPostSupabase(post: BlogPost): Promise<void> {
 export interface FlamarConfiguracoes {
   whatsapp_number: string; // ex: 5511942239108
   whatsapp_display: string; // ex: (11) 94223-9108
-  usuarios_json?: string; // JSON serializado de UserAccount[]
 }
 
 export async function carregarConfiguracoesSupabase(): Promise<FlamarConfiguracoes | null> {
@@ -419,17 +418,20 @@ export async function carregarConfiguracoesSupabase(): Promise<FlamarConfiguraco
       .from('flamar_configuracoes')
       .select('chave, valor');
 
-    if (error || !data || data.length === 0) return null;
+    if (error) {
+      console.warn('[Flamar Supabase] Configurações ainda indisponíveis:', error.message);
+      return null;
+    }
+    if (!data || data.length === 0) return null;
     const configMap: Record<string, string> = {};
     data.forEach((row: any) => {
       configMap[row.chave] = row.valor;
     });
 
-    if (configMap['whatsapp_number'] || configMap['usuarios_json']) {
+    if (configMap['whatsapp_number']) {
       return {
-        whatsapp_number: configMap['whatsapp_number'] || '5511942239108',
-        whatsapp_display: configMap['whatsapp_display'] || '(11) 94223-9108',
-        usuarios_json: configMap['usuarios_json']
+        whatsapp_number: configMap['whatsapp_number'],
+        whatsapp_display: configMap['whatsapp_display'] || '(11) 94223-9108'
       };
     }
     return null;
@@ -438,17 +440,7 @@ export async function carregarConfiguracoesSupabase(): Promise<FlamarConfiguraco
   }
 }
 
-export async function salvarConfiguracoesSupabase(cfg: FlamarConfiguracoes): Promise<void> {
-  try {
-    const rows = [
-      { chave: 'whatsapp_number', valor: cfg.whatsapp_number, atualizado_em: new Date().toISOString() },
-      { chave: 'whatsapp_display', valor: cfg.whatsapp_display, atualizado_em: new Date().toISOString() }
-    ];
-    if (cfg.usuarios_json !== undefined) {
-      rows.push({ chave: 'usuarios_json', valor: cfg.usuarios_json, atualizado_em: new Date().toISOString() });
-    }
-    await supabase.from('flamar_configuracoes').upsert(rows, { onConflict: 'chave' });
-  } catch (err) {
-    console.error('[Flamar Supabase] Erro ao salvar configuracoes:', err);
-  }
+export async function salvarConfiguracoesSupabase(_cfg: FlamarConfiguracoes): Promise<void> {
+  // Não há escrita anônima de configurações: exige endpoint autenticado/backend.
+  console.warn('[Flamar Supabase] Escrita de configurações desabilitada até integrar Supabase Auth.');
 }
