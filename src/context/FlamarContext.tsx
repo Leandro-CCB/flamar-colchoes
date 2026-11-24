@@ -268,21 +268,42 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   }, []);
 
-  // ── Gestão de Usuários e Autenticação ERP ──
-  const [users, setUsers] = useState<UserAccount[]>(() =>
-    loadStorage<UserAccount[]>(STORAGE_KEYS.USERS, INITIAL_DEFAULT_USERS)
-  );
+  // ── Gestão de Usuários e Autenticação ERP (100% Supabase) ──
+  const [users, setUsers] = useState<UserAccount[]>([]);
 
-  // Não sincroniza senhas nem usuários pelo cliente/anônima; requer Supabase Auth/backend.
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-  }, [users]);
+    localStorage.removeItem(STORAGE_KEYS.USERS);
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+  }, []);
+
+  // Carrega lista de usuários diretamente da tabela flamar_usuarios no Supabase
+  useEffect(() => {
+    let mounted = true;
+    supabase
+      .from('flamar_usuarios')
+      .select('user_id, email, nome, role, allowed_sections, is_active, created_at')
+      .order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (!mounted || error || !data) return;
+        const mapped: UserAccount[] = data.map((row) => ({
+          id: row.user_id,
+          name: row.nome || row.email || 'Usuário',
+          username: row.email || row.user_id,
+          password: '',
+          role: row.role === 'master' ? 'master' : 'administrador',
+          allowed_sections: Array.isArray(row.allowed_sections) ? row.allowed_sections : ['inventory'],
+          is_active: row.is_active !== false,
+          created_at: row.created_at || new Date().toISOString()
+        }));
+        setUsers(mapped);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Exige login após recarregar e invalida sessão legada implícita.
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
-  useEffect(() => {
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
-  }, []);
 
 
   const loadFlamarUserProfile = useCallback(async (userId: string, fallbackEmail?: string): Promise<UserAccount | null> => {
@@ -360,17 +381,51 @@ export const FlamarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       created_at: new Date().toISOString()
     };
     setUsers((prev) => [...prev, newUser]);
+    void supabase
+      .from('flamar_usuarios')
+      .upsert({
+        user_id: newUser.id,
+        email: newUser.username.trim().toLowerCase(),
+        nome: newUser.name,
+        role: newUser.role,
+        allowed_sections: newUser.allowed_sections,
+        is_active: newUser.is_active,
+        created_at: newUser.created_at
+      })
+      .then(({ error }) => {
+        if (error) console.error('[Flamar] Erro ao salvar usuário no Supabase:', error.message);
+      });
     return newUser;
   }, []);
 
   const updateUser = useCallback((updatedUser: UserAccount) => {
     setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
     setCurrentUser((prev) => (prev && prev.id === updatedUser.id ? updatedUser : prev));
+    void supabase
+      .from('flamar_usuarios')
+      .upsert({
+        user_id: updatedUser.id,
+        email: updatedUser.username.trim().toLowerCase(),
+        nome: updatedUser.name,
+        role: updatedUser.role,
+        allowed_sections: updatedUser.allowed_sections,
+        is_active: updatedUser.is_active
+      })
+      .then(({ error }) => {
+        if (error) console.error('[Flamar] Erro ao atualizar usuário no Supabase:', error.message);
+      });
   }, []);
 
   const deleteUser = useCallback((id: string) => {
     setUsers((prev) => prev.filter((u) => u.id !== id));
     setCurrentUser((prev) => (prev && prev.id === id ? null : prev));
+    void supabase
+      .from('flamar_usuarios')
+      .delete()
+      .eq('user_id', id)
+      .then(({ error }) => {
+        if (error) console.error('[Flamar] Erro ao excluir usuário no Supabase:', error.message);
+      });
   }, []);
 
   useEffect(() => {
